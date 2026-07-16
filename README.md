@@ -1,237 +1,258 @@
-# Template for Hackathon
-이 레파지토리는 참여자들이 해커톤 결과물을 위한 레파지토리 생성시에 참고할 내용들을 담고 있습니다.
-1. 레파지토리 생성
-2. 레파지토리 구성
-3. README.md 가이드라인
-4. README.md 작성팁
-<br/>
-
-
-## 1. 레파지토리 생성
-- https://classroom.github.com/a/VDJSvmVC
-- 위 Github Classroom 링크에 접속해 본인 조의 github 레파지토리를 생성하세요.
-<img width="1125" height="790" alt="image" src="https://github.com/user-attachments/assets/7377b191-d36a-43bd-ba16-9742be532ecf" />
-
-
-- 레파지토리 생성 시 팀 이름은 `{트랙}-{팀번호}-{팀명}` 형식으로 생성하세요.
-- 트랙 란에는 융합트랙은 'A', 지정과제 트랙은 'B', 창업트랙은 'C'를 기입합니다.
-- 예를 들어, 융합트랙 3조의 팀명은 `A-03-ExampleTeamName` 입니다.
-- 이 경우 `PNUAI-A-03-ExampleTeamName`이라는 이름으로 레포지토리가 생성됩니다.
-<br/>
-
-
-
-## 2. 레파지토리 구성
-- 레파지토리 내에 `README.md` 파일 생성하고 아래의 가이드라인과 작성팁을 참고하여 파일을 작성하세요.
-- 레파지토리 내에 `docs` 폴더를 생성하고 폴더 내에는 과제 수행 하면서 작성한 각종 보고서, 발표자료를 올려둡니다.
-- 그 밖에 레파지토리의 폴더 구성은 과제 결과물에 따라 자유롭게 구성하되 가급적 코드의 목적이나 기능에 따라 폴더를 나누어 구성하세요.  
-<br/>
-
-
-## 3. README.md 가이드라인
-- README 파일 작성시에 아래의 5가지 항목의 내용은 필수적으로 포함해야 합니다.
-- 아래의 7가지 항목이외에 프로젝트의 이해를 돕기위한 내용을 추가해도 됩니다.
-- `SAMPLE_README.md`가 단순한 형태의 예제이니 참고하세요.
-```markdown
+# HeyPNU
+## 부산대학교 외국인 유학생 통합 지원 서비스 (Hey! PNU)
+ 
+---
+ 
 ### 1. 프로젝트 소개
+ 
 #### 1.1. 개발배경 및 필요성
-> 프로젝트를 실행하게 된 배경 및 필요성을 작성하세요.
+
+대한민국은 'Study Korea 300K Project'를 통해 2027년까지 외국인 유학생 30만 명 유치를 목표로 하고 있으며, 부산대학교 역시 매년 증가하는 외국인 유학생을 맞이하고 있습니다. 그러나 실제 외국인 유학생들이 한국 유학 과정에서 겪는 정보 접근 및 정착 문제는 여전히 해결되지 못하고 있습니다.
+
+특히 외국인 유학생들은 대학 지원 단계부터 입국 이후 정착 과정까지 복잡하고 파편화된 정보 환경 속에서 많은 혼란을 경험하고 있습니다. 대학별로 상이한 입학 요강, 복잡한 행정 절차, 언어 장벽, 생활 정보 부족 등 다양한 문제들이 존재하며, 필요한 정보를 여러 플랫폼에서 개별적으로 찾아야 하는 비효율적인 구조가 지속되고 있습니다.
+
+**개발 필요성:**
+1. **PNU 외국인 유학생을 위한 원스톱 통합 플랫폼 필요:** 현재 PNU 외국인 유학생들은 필요한 정보를 얻기 위해 국제처 웹사이트, 기숙사 포털, 각 학과 페이지 등 여러 곳을 따로 찾아다녀야 하는 불편함을 겪고 있다. 이러한 정보를 한 곳에서 통합적으로 확인함으로써 정보 접근성을 높이고 초기 적응 부담을 효과적으로 줄일 수 있습니다.
+2. **개인 맞춤형 재학생 지원 시스템 필요:** 학생의 전공과 학업 진행 상황에 맞춘 수강 과목 추천, 관심 분야와 커리어 목표를 반영한 비교과 프로그램 추천 기능을 제공하여 재학 기간 동안 알차게 대학 생활을 이어나갈 수 있도록 지원합니다.
+3. **학업 관리 및 캠퍼스 생활 지원 기능 필요:** 남은 졸업 요건을 한눈에 확인할 수 있는 체크리스트와 학교 웹사이트의 인턴십 공고를 한데 모아 제공함으로써 학업과 진로 준비를 체계적으로 이어나갈 수 있도록 돕습니다.
 
 #### 1.2. 개발 목표 및 주요 내용
-> 프로젝트의 목표 및 주요 내용을 작성하세요.
+
+본 프로젝트의 목표는 외국인 유학생이 부산대학교 유학 준비부터 졸업 이후 진로까지, 필요한 모든 정보와 기능을 한 곳에서 이용할 수 있는 통합 플랫폼인 **'안녕! 부산대 (Hey! PNU)'**를 구축하는 것입니다.
+
+* **유학 준비생**: MBTI·관심 분야·언어 실력 기반 학과 추천 AI, 나라별 서류 체크리스트, 장학 정보
+* **재학생**: 수강 과목 추천 AI, 졸업요건 체크리스트, 캠퍼스 맵, 학교 시설 가이드, 커뮤니티 게시판, 취업 정보
+* **공통**: 다국어 지원(6개 언어+), 비자연장 알림, Emergency 긴급 기능, 주변 생활 편의 정보
 
 #### 1.3. 세부내용
-> 위 내용을 작성하세요.
+
+본 플랫폼은 부산대 외국인 유학생을 대상으로 다음과 같은 시스템 기능을 구현합니다.
+
+* **회원가입 및 로그인:** 편리한 학번 기반 로그인 시스템 제공.
+* **프로필 관리:** 이름, 국적, 학력, 연락처, 관심 분야 등 개인 정보 설정 및 수정 기능 제공.
+* **다국어 지원 시스템:** 한국어, 영어, 중국어, 일본어, 베트남어 등 다국어 UI를 지원하며 AI 기반 실시간 번역 및 현지화(Localization) 처리. 공지사항, 챗봇, 체크리스트 등 주요 기능 다국어 제공.
+* **지능형 정보 검색:** 대학, 전공, 장학금, 행정 절차, 생활 정보를 통합하여 즉각적인 검색 결과 도출.
+* **스마트 알림 시스템:** 중요 일정(장학금 신청 마감일, 수강 신청 및 정정 기간 등) 자동 알림 제공.
+* **AI 통합 어시스턴트:** 입학, 학업, 생활, 비자, 진로 관련 질문에 답변하며 사용자 상황에 따른 개인 맞춤형 정보 제공.
+* **Emergency 지원 기능:** 119, 112 등 긴급 연락처 원터치 연결, 국가별 대사관 및 영사관 연락처 제공, 응급 상황 다국어 대응 가이드 제공.
+* **생활 편의 정보 제공:** 지도 API를 활용하여 외국인 지원 센터, 가까운 출입국 관리 사무소, 병원, 약국, 마트, 은행 등 생활 편의시설 안내 및 외국인 친화 시설 추천, 주거 계약 및 전세 사기 예방 가이드 제공.
+* **신입생 정착 필수 체크리스트:** 외국인 등록증 신청, 유심 카드 개설, 은행 계좌 개설 등 입국 후 30일 이내 필수 과업 단계별 안내.
+* **수강 과목 추천 AI:** 학생의 전공, 졸업 요건, 관심 분야를 분석하여 차기 학기 과목 추천.
+* **졸업요건 체크리스트:** 현재 이수 학점을 자동 계산하고 아직 충족되지 않은 졸업 요건을 한눈에 식별.
+* **인턴십 & 아르바이트 정보:** 전공 연계 인턴십 및 아르바이트 공고 간략 제공 및 상세 리스트 연계.
+* **커뮤니티 게시판:** 국가별, 학과별 게시판을 별도 개설하여 활발한 학생 간 네트워킹 지원.
+* **비교과 프로그램 추천 AI:** 학생의 관심사 및 커리어 목표 기반 동아리, 공모전, 교내 활동 추천.
+* **학교 시설 이용 안내:** 학생 식당 메뉴, 헬스장, 도서관, 교내 의무실 등의 상세 이용 가이드 제공.
+* **캠퍼스 맵:** GPS 기반 다국어 캠퍼스 지도로, 실시간 교내 셔틀버스 운행 정보 등 통합 안내.
+* **법적 정보 안내:** 외국인 유학생 관련 국내 법률 정보, 아르바이트 취업 허가(시간제 취업) 등록 방법 안내.
 
 #### 1.4. 기존 서비스 대비 차별성
-> 위 내용을 작성하세요.
+
+| 기능 | 현재 방식 | 안녕! 부산대 (Hey! PNU) |
+| :--- | :--- | :--- |
+| **장학금 정보** | 국제처 홈페이지 방문, 개별 검색 필요 | GKS, TOPIK, 학과별 장학 정보 통합 제공 및 마감일 알림 |
+| **졸업 요건 관리** | 학과 안내문 개별 대조, 수동 계산 | 취득 학점 자동 계산 및 미충족 요건 실시간 시각화 |
+| **과목 추천** | 개인 판단 또는 비공식 선배 조언에 의존 | 전공, 관심사 기반 AI 맞춤 수강 과목 추천 |
+| **캠퍼스 맵** | 교내 지도가 여러 플랫폼에 파편화됨 | GPS 기반 통합 다국어 지도 및 실시간 셔틀버스 정보 |
+| **응급 지원** | 긴급 상황 시 대처 가이드 및 번호 개별 검색 | 119/112 원터치 연결, 국가별 대사관 정보 및 다국어 대응 가이드 |
+| **다국어 지원** | 한국어 중심 서비스로 언어 장벽 존재 | 6개 국어 이상 지원 및 문화적 맥락 반영 현지화 |
+| **통합 서비스** | 각 부서별 사이트 개별 방문 필요 | 입학 준비부터 졸업 후 진로까지 원스톱 라이프 사이클 통합 |
 
 #### 1.5. 사회적가치 도입 계획
-> 위 내용을 작성하세요.
 
+1. **외국인 유학생의 정보 접근성 향상 및 성공적인 정착 지원:** 분산된 정보를 통합하고 다국어 기반 AI 지원 기능을 제공함으로써 정보 접근성을 향상시키고 초기 정착 과정에서 발생하는 혼란과 부담을 줄이는 데 기여할 수 있습니다.
+2. **유학생의 학업 및 진로 역량 강화:** AI 기반 과목 추천, 졸업요건 체크리스트, 비교과 프로그램 추천 기능을 통해 학업 목표와 진로 계획을 체계적으로 수립할 수 있도록 지원하고 자기주도적 학습 역량을 강화합니다.
+3. **안전하고 포용적인 캠퍼스 환경 조성:** Emergency 기능, 병원·약국 정보 제공, 주거 및 부동산 사기 예방 가이드, 비자 관리 지원 기능을 통해 유학생들이 한국 생활에서 직면할 수 있는 다양한 위험 요소를 예방하고 신속하게 대응할 수 있도록 지원합니다.
+
+---
 
 ### 2. 상세설계
+ 
 #### 2.1. 시스템 구성도
-> 시스템 구성도(infra, front, back등의 node 간의 관계)의 사진을 삽입하세요.
+ 
+> 시스템 구성도(infra, front, back 등의 node 간의 관계) 사진을 삽입하세요. 
+ 
+#### 2.2. 사용 기술
 
-#### 2.1. 사용 기술
-> 스택 별(backend, frontend, designer등) 사용한 기술 및 버전을 작성하세요.
-> 
-> ex) React.Js - React14, Node.js - v20.0.2
-> (필수)활용한 생성형 AI, AI 코딩 도구에 대해서도 기술하세요.
+| 분야 | 기술 스택 | 버전 | 활용 목적 |
+|---|---|---|---|
+| **Frontend** | ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white) ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white) | React v18 / TS v5 / Tailwind v3 | 다국어 반응형 웹 UI, 대시보드 컴포넌트 개발 |
+| **Backend** | ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white) ![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white) | Node.js v20 / Express v4 | REST API 서버, 비즈니스 로직 및 AI API 연동 처리 |
+| **Database** | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) | v16 | 유학생 정보, 체크리스트, 커뮤니티 데이터 관리 (Supabase) |
+| **AI** | ![Claude](https://img.shields.io/badge/Claude-D97757?style=for-the-badge&logo=anthropic&logoColor=white) ![Gemini](https://img.shields.io/badge/Gemini-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white) | - | 학과·과목 추천, 공지사항 다국어 요약 |
+| **Infra** | ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white) ![AWS](https://img.shields.io/badge/AWS_EC2-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white) | - | 프론트엔드 배포 / 백엔드 서버 운영 |
+| **생성형 AI · AI 코딩 도구** | ![GitHub Copilot](https://img.shields.io/badge/GitHub_Copilot-181717?style=for-the-badge&logo=github&logoColor=white) ![Claude](https://img.shields.io/badge/Claude-D97757?style=for-the-badge&logo=anthropic&logoColor=white) ![Cursor](https://img.shields.io/badge/Cursor-000000?style=for-the-badge&logoColor=white) | - | 코드 자동완성·리팩토링·디버깅, 기획 및 문서 작성 보조 |
+| **협업** | ![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white) ![Notion](https://img.shields.io/badge/Notion-000000?style=for-the-badge&logo=notion&logoColor=white) | - | 버전 관리, 문서화 및 일정 관리 |
+
+---
 
 ### 3. 개발결과
+ 
 #### 3.1. 전체시스템 흐름도
-> 위 내용을 작성하세요.
-
+ 
+```
+[준비생 사용자]                      [재학생 사용자]
+       │                                    │
+       ▼                                    ▼
+ MBTI·관심분야·언어 입력           학점·수강이력 입력
+       │                                    │
+       ▼                                    ▼
+ AI 학과 추천 엔진                  AI 과목 추천 엔진
+ (Claude API)                       (Claude API)
+       │                                    │
+       ▼                                    ▼
+ 나라별 서류 체크리스트              졸업요건 체크리스트
+ 장학 정보 매칭                      비교과 프로그램 추천
+       |                       캠퍼스 맵 · 시설 가이드
+       │                                    │
+       └──────────────┬─────────────────────┘
+                      ▼
+           [공통 기능 레이어]
+      ┌──────────────────────────────┐
+      │  다국어 UI (6개 언어+)        │
+      │  비자연장 알림 (D-90~D-7)     │
+      │  Emergency 긴급 기능          │
+      │  커뮤니티 게시판              │
+      │  생활 편의 정보               │
+      └──────────────────────────────┘
+                      │
+                      ▼
+          [Backend: Node.js + Express]
+          [Database: PostgreSQL]
+                      │
+            ┌─────────┴─────────┐
+            ▼                   ▼
+      Claude API           Gemini API
+   (학과·과목 추천)       (공지 다국어 요약)
+                      │
+                      ▼
+          [배포: Vercel(FE) + AWS EC2(BE)]
+```
+ 
 #### 3.2. 기능설명
-> 각 페이지 마다 사용자의 입력의 종류와 입력에 따른 결과 설명 및 시연 영상.
-> 
-> ex. 로그인 페이지:
-> 
-> - 이메일 주소와 비밀번호를 입력하면 입력창에서 유효성 검사가 진행됩니다.
-> 
-> - 요효성 검사를 통과하지 못한 경우, 각 경고 문구가 입력창 하단에 표시됩니다.
->   
-> - 유효성 검사를 통과한 경우, 로그인 버튼이 활성화 됩니다.
->   
-> - 로그인 버튼을 클릭 시, 입력한 이메일 주소와 비밀번호에 대한 계정이 있는지 확인합니다.
->   
-> - 계정이 없는 경우, 경고문구가 나타납니다.
+ 
+> 각 페이지마다 사용자의 입력 종류와 입력에 따른 결과를 설명하고 시연 영상을 첨부하세요.
 >
-> (영상)
-
+> ex. 학과 추천 페이지:
+>
+> - MBTI 유형, 관심 분야, 언어 실력을 선택·입력하면 AI 분석이 시작됩니다.
+>
+> - 분석 완료 시 적합도 순으로 정렬된 학과 추천 목록과 Goal-Oriented Gap Analysis 리포트가 표시됩니다.
+>
+> - 각 학과 카드를 클릭하면 입학 요건, 장학금, 졸업 후 진로 정보로 이동합니다.
+>
+> (시연 영상 첨부)
+ 
 #### 3.3. 기능명세서
-> 개발한 제품에 대한 기능명세서를 작성해 제출하세요.
-> 
-> 노션 링크, 한글 문서, pdf 파일, 구글 스프레드 시트 등...
+
+| 기능 ID | 대분류 | 소분류 (기능명) | 기능 상세 설명 | 입력 데이터 | 출력 및 처리 결과 | 지원 플랫폼 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **F-01** | 온보딩 | 언어 설정 | 앱/웹 최초 진입 시 사용자가 선호하는 다국어 인터페이스를 선택함 | 언어 선택 (한국어, 영어, 중국어, 베트남어 등) | 선택한 언어 설정을 로컬 스토리지/쿠키에 저장하고 화면 번역 리소스를 매핑하여 표시함 | Web / Mobile |
+| **F-02** | 회원가입 | 학생 구분 선택 | 회원가입 프로세스 시작 시 국내 학생 또는 외국인 유학생 역할 선택 | 학생 유형 (국내 학생 / 외국인 유학생) | 가입 폼 요건을 동적으로 변경함 (외국인 유학생 선택 시 비자 정보 필수 활성화) | Web / Mobile |
+| **F-03** | 회원가입 | 계정 생성 | 이메일과 비밀번호를 이용하여 회원 계정을 등록함 | 이름, 이메일 주소, 비밀번호, 비밀번호 확인 | 입력값 유효성 검사 후 Supabase Auth를 통해 신규 사용자(`users` 테이블) 등록 | Web / Mobile |
+| **F-04** | 인증 | 로그인 | 가입된 계정 정보를 입력하여 앱 세션을 시작함 | 이메일, 비밀번호 | 로그인 성공 시 세션 토큰을 발급하고 메인 대시보드로 이동시킴 | Web / Mobile |
+| **F-05** | 대시보드 | 홈 화면 구성 | 학생 유형 및 언어 설정에 맞는 메인 화면을 보여줌 | 인증 세션 정보 | 개인 맞춤형 추천 과목 위젯, 마감 임박 알림, 커뮤니티 소식 목록 렌더링 | Web / Mobile |
+| **F-06** | 대시보드 | 실시간 알림 | 학사 공지, 장학금 마감, 커뮤니티 답글 등의 소식을 전달함 | 새 알림 이벤트 데이터 | Firebase Cloud Messaging(FCM)을 통해 모바일에 푸시 알림을 발송하고 앱 내 알림 배지 업데이트 | Mobile |
+| **F-07** | 프로필 | 상세 프로필 설정 | 추천 알고리즘에 활용할 개인 성향 및 학업 프로필 정보를 기입함 | 국적, MBTI, 강점/약점 키워드, 구사 가능 언어 | `profiles` 및 `interests` 테이블 데이터 수정 및 동기화 | Web / Mobile |
+| **F-08** | 프로필 | 학생 신분 인증 | 재학 사실 증명을 위해 서류를 제출하고 학생증을 인증함 | 학번, 비자 종류 (D-2/D-4), 학생증 이미지 파일 | 이미지를 Supabase Storage에 업로드하고 상태를 '승인 대기(`verification_pending`)'로 업데이트 | Web / Mobile |
+| **F-09** | 학업 관리 | AI 과목/학과 추천 | 사용자의 프로필 역량을 기반으로 적합한 과목과 학과를 AI로 분석하여 추천함 | 프로필 정보 (MBTI, 관심 분야, 어학 역량 등) | 분석 스코어와 함께 추천 과목 목록을 정렬하여 출력 (`course_recommendations` 테이블) | Web / Mobile |
+| **F-10** | 학업 관리 | 졸업 체크리스트 | 졸업에 필요한 취득 학점 및 세부 요구 조건을 확인하고 관리함 | 이수 완료 과목 리스트 | 잔여 학점 계산 및 카테고리별 이수 완료 진척도를 그래프로 시각화 (`graduation_checklist`) | Web / Mobile |
+| **F-11** | 정보 조회 | 장학금 상세 검색 | 유학생이 신청 가능한 장학금을 조회하고 검색함 | 검색어, 마감일 필터 조건 | 조건에 맞는 장학금 정보 및 외부 신청 링크 목록 표시 (`scholarships` 테이블) | Web / Mobile |
+| **F-12** | 정보 조회 | 채용 및 알바 정보 | 유학생 맞춤형 시간제 근무나 인턴십 정보를 필터링하여 제공함 | 고용 형태 필터 (시간제/인턴), 언어 필터 | 워크넷 API 연동 및 조건에 부합하는 외국인 채용 정보 출력 (`job_opportunities` 테이블) | Web / Mobile |
+| **F-13** | 커뮤니티 | 글로벌 소모임 개설 | 다국어 교류나 스터디를 위한 모임을 생성함 | 모임명, 카테고리, 모임 설명 | `community_groups` 테이블에 새로운 그룹 데이터 삽입 | Web / Mobile |
+| **F-14** | 커뮤니티 | 소모임 가입 및 탈퇴 | 원하는 소모임에 멤버로 참가하거나 탈퇴함 | 그룹 ID, 사용자 ID | `community_members` 테이블에 가입 정보 기록 및 실시간 참여 인원 업데이트 | Web / Mobile |
 
 #### 3.4. 디렉토리 구조
-> 위 레포지토리의 디렉토리 구조를 설명하세요.
+ 
+```
+HeyPNU/
+├── client/                        # React 프론트엔드
+│   ├── public/                    # 정적 파일 (로고, 아이콘 등)
+│   └── src/
+│       ├── components/            # 공통 UI 컴포넌트
+│       ├── pages/
+│       │   ├── PrepStudent/       # 준비생 기능 (학과추천, 서류체크리스트 등)
+│       │   ├── CurrentStudent/    # 재학생 기능 (과목추천, 졸업요건 등)
+│       │   └── Common/            # 공통 기능 (비자알림, 긴급, 커뮤니티 등)
+│       ├── hooks/                 # 커스텀 훅
+│       ├── utils/                 # 다국어 처리 등 유틸리티 함수
+│       └── types/                 # TypeScript 타입 정의
+├── server/                        # Node.js 백엔드
+│   ├── routes/                    # API 라우터
+│   ├── controllers/               # 비즈니스 로직
+│   ├── models/                    # DB 모델 (PostgreSQL)
+│   ├── services/                  # AI API 연동 (Claude, Gemini)
+│   └── middleware/                # 인증, 다국어 미들웨어
+├── docs/                          # 시스템 구성도, 기능명세서 등
+├── .env.example
+├── .gitignore
+└── README.md
+```
 
-#### 3.5 AI 도구 활용
-> AI 도구를 어떤 단계에서 어떻게 활용했는지, 어떤 성과가 도출되었는지 기술해주세요.
+ 
+#### 3.5. AI 도구 활용
+
+본 프로젝트에서는 개발 생산성 및 품질을 극대화하기 위해 다음과 같이 생성형 AI 및 코딩 도구를 연동하여 활용했습니다.
+
+1. **AI 코딩 도구 활용 (개발 단계):**
+   * **Cursor, GitHub Copilot, Claude Code, OpenAI Codex**를 개발 환경에 투입하여 지능형 자동 완성, 코드 구조화, 복잡한 API 연동 로직의 실시간 리팩토링 및 빠른 디버깅을 실행했습니다. 이를 통해 전체 개발 사이클을 효과적으로 단축했습니다.
+2. **기획 및 디자인 단계:**
+   * **ChatGPT, Google AI Studio, Claude Design**을 도입하여 초기 데이터 구조 설계 및 기획을 다듬고, 다양한 문화권 유학생을 타겟으로 한 다국어 반응형 UI 디자인을 기획/조율하였습니다.
+3. **핵심 분석 서비스 구현:**
+   * **Google AI Studio (Gemini API)**를 통합하여 분산되어 있는 학내 공지사항 데이터를 실시간으로 다국어 번역 및 핵심요약 분석하는 서비스 엔진을 개발했습니다.
 
 ### 4. 설치 및 사용 방법
-> 제품을 설치하기 위헤 필요한 소프트웨어 및 설치 방법을 작성하세요.
->
-> 제품을 설치하고 난 후, 실행 할 수 있는 방법을 작성하세요.
+
+```bash
+# 레포지토리 클론
+git clone https://github.com/PNU-2026-AI-Hackathon/pnuai-a-04-5guys.git
+cd pnuai-a-04-5guys
+
+# 환경변수 설정
+cp .env.example .env.local
+# .env.local 에 Claude API Key, Gemini API Key, Supabase Keys 등 입력
+
+# 프론트엔드 실행
+cd client
+npm install
+npm start
+
+# 백엔드 실행
+cd server
+npm install
+npm run dev
+```
+
+> 필요한 환경변수 목록은 `.env.example` 파일을 참고하세요.
+
+---
 
 ### 5. 소개 및 시연 영상
-> 프로젝트에 대한 소개와 시연 영상을 넣으세요.
-> 프로젝트 소개 동영상을 교육원 메일(swedu@pusan.ac.kr)로 제출 이후 센터에서 부여받은 youtube URL주소를 넣으세요.
-
+-- 밍구 + 츄 작성 예정 
+ 
 ### 6. 팀 소개
-> 팀원 소개 & 구성원 별 역할 분담 & 간단한 연락처를 작성하세요.
+
+| 판킨킨자우 (팀장) | 텟 까웅 산 | 비얌바수렝 투브신자르갈 | 츄딴띤자 | 에르덴 오치르 노밍구 |
+|---|---|---|---|---|
+| <img src="https://avatars.githubusercontent.com/u/167033161?v=4" width="100" height="100"/> | <img src="https://avatars.githubusercontent.com/u/142887402?v=4" width="100" height="100"/> | <img src="https://avatars.githubusercontent.com/u/163098030?v=4" width="100" height="100"/> | <img src="https://avatars.githubusercontent.com/u/120101937?v=4" width="100" height="100"/> | <img src="https://avatars.githubusercontent.com/u/291190850?v=4" width="100" height="100"/> |
+| **역할:** 팀장 · 백엔드 | **역할:** 풀스택 | **역할:** AI 엔지니어 | **역할:** 프론트엔드 | **역할:** 프론트엔드 보조 · 기획 |
+| **전공:** 정보컴퓨터공학과 (3학년) | **전공:** 인공지능전공 (2학년) | **전공:** 정보컴퓨터공학과 (3학년) | **전공:** 정보컴퓨터공학부 (2학년) | **전공:** 생명과학전공 (3학년) |
+| **학번:** 202455393 | **학번:** 202455474 | **학번:** 202355673 | **학번:** 202455471 | **학번:** 202313151 |
+| **연락처:** 010-8059-3833 | **연락처:** 010-2956-3055 | **연락처:** 010-5791-3318 | **연락처:** 010-7362-2166 | **연락처:** 010-2418-6633 |
+| **이메일:** pankhinkhinzaw12@gmail.com | **이메일:** htet_kaung_san@pusan.ac.kr | **이메일:** tuvshinjargal@pusan.ac.kr | **이메일:** cttz2310@pusan.ac.kr | **이메일:** nmngoo15@gmail.com |
+
+---
 
 ### 7. 해커톤 참여 후기
-> 팀원 별 해커톤 참여 후기를 작성하세요.
-```
-<br/>
-
-
-## 4. README.md 작성 팁
-- 마크다운 언어를 이용해 README.md 파일을 작성할 때 참고할 수 있는 마크다운 언어 문법을 공유합니다.
-- 다양한 예제와 보다 자세한 문법은 [이 문서](https://www.markdownguide.org/basic-syntax/)를 참고하세요.
-
-### 4.1. 헤더 Header
-```
-# This is a Header 1
-## This is a Header 2
-### This is a Header 3
-#### This is a Header 4
-##### This is a Header 5
-###### This is a Header 6
-####### This is a Header 7 은 지원되지 않습니다.
-```
-
-# This is a Header 1
-## This is a Header 2
-### This is a Header 3
-#### This is a Header 4
-##### This is a Header 5
-###### This is a Header 6
-####### This is a Header 7 은 지원되지 않습니다.
-<br />
-
-### 4.2. 인용문 BlockQuote
-```
-> This is a first blockqute.
->	> This is a second blockqute.
->	>	> This is a third blockqute.
-```
-> This is a first blockqute.
->	> This is a second blockqute.
->	>	> This is a third blockqute.
-<br />
-
-### 4.3. 목록 List
-* **Ordered List**
-```
-1. first
-2. second
-3. third  
-```
-1. first
-2. second
-3. third
-<br />
-
-* **Unordered List**
-```
-* 하나
-  * 둘
-
-+ 하나
-  + 둘
-
-- 하나
-  - 둘
-```
-* 하나
-  * 둘
-
-+ 하나
-  + 둘
-
-- 하나
-  - 둘
-<br />
-
-### 4.4. 코드 CodeBlock
-* 코드 블럭 이용 '``'
-```
-여러줄 주석 "```" 이용
-"```
-#include <stdio.h>
-int main(void){
-  printf("Hello world!");
-  return 0;
-}
-```"
-
-단어 주석 "`" 이용
-"`Hello world`"
-
-* 큰 따옴표(") 없이 사용하세요.
-``` 
-<br />
-
-### 4.5. 링크 Link
-```
-[Title](link)
-[부산대학교 AI융합교육원](https://swedu.pusan.ac.kr/swedu/index.do)
-
-<link>
-<https://swedu.pusan.ac.kr>
-``` 
-[부산대학교 AI융합교육원](https://swedu.pusan.ac.kr)
-
-<https://swedu.pusan.ac.kr>  
-<br />
-
-### 4.6. 강조 Highlighting
-```
-*single asterisks*
-_single underscores_
-**double asterisks**
-__double underscores__
-~~cancelline~~<img width="1994" height="253" alt="KakaoTalk_20260520_160616446_01" src="https://github.com/user-attachments/assets/9269b8bd-7539-4120-a97c-705f96fd5e71" />
-
-```
-*single asterisks* <br />
-_single underscores_ <br />
-**double asterisks** <br />
-__double underscores__ <br />
-~~cancelline~~  <br />
-<br />
-
-### 4.7. 이미지 Image
-```
-<img src="/path/to/img.jpg" width="600px" title="Title" alt="Alt text"></img>
-![Alt text](/path/to/img.jpg "Optional title")
-```
-<img src="https://github.com/user-attachments/assets/3c717ecf-6e22-487b-ae12-72d11e8af5ff" width="600px" title="부산대학교 AI융합교육원" alt="부산대학교 AI융합교육원"></img>
-<br/>
-![부산대학교 AI융합교육원](https://github.com/user-attachments/assets/3c717ecf-6e22-487b-ae12-72d11e8af5ff "부산대학교 AI융합교육원")
-<br/>
+ 
+- **[판킨킨자우]**
+  - 내용 작성
+- **[텟 까웅 산]**
+  - 내용 작성
+- **[비얌바수렝 투브신자르갈]**
+  - 내용 작성
+- **[츄딴띤자]**
+  - 내용 작성
+- **[에르덴 오치르 노밍구]**
+  - 내용 작성
+ 
