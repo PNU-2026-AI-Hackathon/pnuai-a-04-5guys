@@ -99,9 +99,9 @@ erDiagram
 
 ### 1.1. 개발 배경 및 필요성 · Background & Motivation
 
-**KO** — 대한민국은 'Study Korea 300K Project'를 통해 2027년까지 외국인 유학생 30만 명 유치를 목표로 하고 있으며, 국내 대학의 외국인 유학생 수는 꾸준히 증가하고 있다. 그러나 실제 유학생들이 겪는 정보 접근과 정착의 어려움은 여전히 해소되지 못하고 있다. 유학생들은 대학 지원 단계부터 입국 이후 정착까지 **파편화된 정보 환경** 속에서 국제처 홈페이지, 기숙사 포털, 각 학과 페이지, Hi Korea 등 여러 곳을 개별적으로 찾아다녀야 한다. 상이한 입학 요강, 복잡한 행정 절차, 언어 장벽, 생활 정보 부족이 겹치며 초기 적응에 큰 부담이 된다.
+**KO** — 부산대학교에는 다양한 국가에서 온 외국인 학부생들이 재학하고 있지만, 이들은 대학생활에 필요한 정보를 찾고 이해하는 과정에서 여러 어려움을 겪고 있다. 설문조사 결과, 정보 접근의 어려움(48.7%), 비자 및 행정 절차의 복잡함(42.3%), 언어 소통의 어려움(36.2%), 교육과정 이해의 어려움(30.5%), 입국 후 초기 정착의 어려움(27.8%) 등이 주요 문제로 나타났다. 특히 학사 일정, 장학금, 수업 및 졸업 요건, 비자·행정 정보, 캠퍼스 생활 정보가 여러 홈페이지와 부서에 분산되어 있어 외국인 학생들이 필요한 정보를 적시에 찾기 어렵다. 또한 언어 장벽과 복잡한 행정 절차로 인해 같은 내용을 반복적으로 문의해야 하는 경우가 발생하여 학생뿐만 아니라 대학 행정 측에도 부담이 되고 있다. 따라서 외국인 학생들이 필요한 정보를 한곳에서 쉽고 빠르게 확인하고, 대학생활 전반을 체계적으로 관리할 수 있는 통합 플랫폼의 필요성이 높다.
 
-**EN** — Korea aims to attract 300,000 international students by 2027 ("Study Korea 300K"), yet the students who arrive still struggle with fragmented information. From application through post-arrival settlement, a PNU international student must navigate the international office site, the dormitory portal, each department's pages, and Hi Korea separately. Differing admission rules, complex administration, a language barrier, and scattered living information make the first months unnecessarily hard.
+**EN** — International undergraduate students at Pusan National University face various challenges in accessing and understanding essential information for campus life. According to our survey, the major difficulties include accessing information (48.7%), complex visa and administrative procedures (42.3%), language barriers (36.2%), understanding the curriculum (30.5%), and initial settlement after arrival (27.8%). Important information such as academic schedules, scholarships, course and graduation requirements, visa procedures, and campus services is scattered across different websites and university departments, making it difficult for international students to find the right information at the right time. Language barriers and complicated administrative procedures can also lead to repeated inquiries, increasing the burden on both students and university staff. Therefore, there is a clear need for an integrated platform that allows international students to access essential information easily, quickly, and in one place while supporting their overall campus life.
 
 ### 1.2. 개발 목표 및 주요 내용 · Goals
 
@@ -118,17 +118,17 @@ erDiagram
 
 | 기능 · Feature | 설명 · Description |
 |---|---|
-| 🤖 AI 어시스턴트 (산지니) | 입학·학업·생활·비자·진로 질문에 학생 프로필 기반으로 응답 (RAG 근거 검색 포함) |
-| 📚 맞춤 수강 추천 | 전공·이수 학점·졸업 요건·관심 분야를 반영한 다음 학기 과목 추천 (규칙 기반 엔진) |
-| 🎓 졸업요건 & 학점 관리 | 이수 학점 자동 계산, 영역별 잔여 학점과 졸업 체크리스트 표시 |
-| 🗓️ 시간표 & 충돌 감지 | 수강 등록 시 요일·시간 겹침을 검사하고 경고 |
-| 🧩 비교과 프로그램 추천 | 관심 분야·커리어 목표 기반 교내 비교과 프로그램 추천 (규칙 기반 엔진) |
-| 💰 장학금 정보 | GKS·TOPIK·학과별 장학 정보 통합 제공 및 마감일 안내 |
-| 📢 공지 통합 | 국제처·학과 게시판을 스크래핑해 원문 링크와 함께 제공 |
-| 🗺️ 캠퍼스 맵 | Naver Maps 기반 시설 안내 |
-| 💬 커뮤니티 | 국가별·학과별 게시판 자동 배정, 글 작성·좋아요·삭제 |
-| 🚨 응급 지원 | 119·112·1345 원터치, 국적별 대사관·출입국 연락처, 전세 사기 예방 안내 |
-| 🌐 다국어 | 19개 UI 언어 프레임워크 · 번역률 EN 100% · KO 95% · ZH 86% · MY 85% · 그 외 진행 중 (미번역 키는 영어로 폴백) |
+| AI 어시스턴트 (산지니) | 입학·학업·생활·비자·진로 질문에 학생 프로필 기반으로 응답 (RAG 근거 검색 포함) |
+| 맞춤 수강 추천 | 전공·이수 학점·졸업 요건·관심 분야를 반영한 다음 학기 과목 추천 (규칙 기반 엔진) |
+| 졸업요건 & 학점 관리 | 이수 학점 자동 계산, 영역별 잔여 학점과 졸업 체크리스트 표시 |
+| 시간표 & 충돌 감지 | 수강 등록 시 요일·시간 겹침을 검사하고 경고 |
+| 비교과 프로그램 추천 | 관심 분야·커리어 목표 기반 교내 비교과 프로그램 추천 (규칙 기반 엔진) |
+| 장학금 정보 | GKS·TOPIK·학과별 장학 정보 통합 제공 및 마감일 안내 |
+| 공지 통합 | 국제처·학과 게시판을 스크래핑해 원문 링크와 함께 제공 |
+| 캠퍼스 맵 | Naver Maps 기반 시설 안내 |
+| 커뮤니티 | 국가별·학과별 게시판 자동 배정, 글 작성·좋아요·삭제 |
+| 응급 지원 | 119·112·1345 원터치, 국적별 대사관·출입국 연락처, 전세 사기 예방 안내 |
+| 다국어 | 19개 UI 언어 프레임워크 · 번역률 EN 100% · KO 95% · ZH 86% · MY 85% · 그 외 진행 중 (미번역 키는 영어로 폴백) |
 
 ### 1.4. 기존 서비스 대비 차별성 · Differentiation
 
@@ -477,7 +477,7 @@ cd frontend && npx tsc -b && npx eslint . && npm run build
 
 ---
 
-> ✍️ **TODO** — 팀원별 참여 후기를 작성하세요. *Each member adds a short reflection.*
+> **TODO** — 팀원별 참여 후기를 작성하세요. *Each member adds a short reflection.*
 > 아래 질문에 2~3문장으로 답하면 충분합니다.
 >
 > - **Pan Khin Khin Zaw** (팀장) — 팀을 이끌며 가장 어려웠던 결정은?
