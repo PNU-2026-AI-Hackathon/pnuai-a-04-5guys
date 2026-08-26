@@ -1,4 +1,4 @@
-# 안녕! 부산대 (Hey! PNU)
+# Hey! PNU ( 안녕! 부산대 )
 
 > **부산대학교 외국인 유학생을 위한 원스톱 통합 플랫폼**
 > An all-in-one onboarding & academic hub for international students at Pusan National University.
