@@ -99,9 +99,13 @@ erDiagram
 
 ### 1.1. 개발 배경 및 필요성 · Background & Motivation
 
-**KO** — 부산대학교에는 다양한 국가에서 온 외국인 학부생들이 재학하고 있지만, 이들은 대학생활에 필요한 정보를 찾고 이해하는 과정에서 여러 어려움을 겪고 있다. 설문조사 결과, 정보 접근의 어려움(48.7%), 비자 및 행정 절차의 복잡함(42.3%), 언어 소통의 어려움(36.2%), 교육과정 이해의 어려움(30.5%), 입국 후 초기 정착의 어려움(27.8%) 등이 주요 문제로 나타났다. 특히 학사 일정, 장학금, 수업 및 졸업 요건, 비자·행정 정보, 캠퍼스 생활 정보가 여러 홈페이지와 부서에 분산되어 있어 외국인 학생들이 필요한 정보를 적시에 찾기 어렵다. 또한 언어 장벽과 복잡한 행정 절차로 인해 같은 내용을 반복적으로 문의해야 하는 경우가 발생하여 학생뿐만 아니라 대학 행정 측에도 부담이 되고 있다. 따라서 외국인 학생들이 필요한 정보를 한곳에서 쉽고 빠르게 확인하고, 대학생활 전반을 체계적으로 관리할 수 있는 통합 플랫폼의 필요성이 높다.
+**KO** — 부산대학교에는 현재 외국인 학생 약 1200여 명이 재학하고 있다. 그러나 유학생에게 필요한 학사, 졸업, 장학금, 공지, 기숙사 및 생활 정보는 여러 채널에 분산되어 있어, 필요한 정보를 적시에 확인하고 정확하게 이해하는 데 어려움이 있다. 특히 언어와 대학 행정 체계에 익숙하지 않은 유학생에게 이러한 정보 격차는 학업 계획, 주요 일정 관리 및 대학생활 전반의 불확실성으로 이어질 수 있다.
+Hey! PNU는 부산대학교의 주요 정보를 하나의 플랫폼으로 통합하고, 공식 정보에 기반한 개인 맞춤형 AI 지원을 제공하여 유학생의 정보 접근성과 대학생활 편의성을 높이고자 한다.
 
-**EN** — International undergraduate students at Pusan National University face various challenges in accessing and understanding essential information for campus life. According to our survey, the major difficulties include accessing information (48.7%), complex visa and administrative procedures (42.3%), language barriers (36.2%), understanding the curriculum (30.5%), and initial settlement after arrival (27.8%). Important information such as academic schedules, scholarships, course and graduation requirements, visa procedures, and campus services is scattered across different websites and university departments, making it difficult for international students to find the right information at the right time. Language barriers and complicated administrative procedures can also lead to repeated inquiries, increasing the burden on both students and university staff. Therefore, there is a clear need for an integrated platform that allows international students to access essential information easily, quickly, and in one place while supporting their overall campus life.
+
+**EN** — Pusan National University currently has approximately 1200 international students from all over the world. However, essential information on academics, graduation, scholarships, notices, housing, and campus life remains distributed across multiple channels, making it difficult for international students to access and understand the right information at the right time. These challenges can create uncertainty in academic planning, deadline management, and everyday university life, particularly for students unfamiliar with the language and university system.
+
+Hey! PNU aims to improve accessibility and convenience by integrating essential PNU information into one platform and providing personalized AI support grounded in official information.
 
 ### 1.2. 개발 목표 및 주요 내용 · Goals
 
