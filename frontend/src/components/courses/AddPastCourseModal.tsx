@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, X } from 'lucide-react'
+import { CheckCircle2, Search, X } from 'lucide-react'
 import { api } from '@/api'
 import { useLanguage } from '@/context/LanguageContext'
 import type { CourseCatalogItem, Enrollment } from '@/types/api'
@@ -25,15 +25,27 @@ export function AddPastCourseModal({
   const [year, setYear] = useState(defaultYear)
   const [term, setTerm] = useState(defaultTerm)
   const [finalGrade, setFinalGrade] = useState('')
-  const [creditsEarned, setCreditsEarned] = useState('')
   const [loading, setLoading] = useState(false)
   const [addingId, setAddingId] = useState<string | null>(null)
   const [error, setError] = useState('')
 
   const years = useMemo(
-    () => Array.from({ length: 8 }, (_, index) => now.getFullYear() - index),
+    () => Array.from({ length: 10 }, (_, index) => now.getFullYear() - index),
     [now],
   )
+
+  const uniqueCourses = useMemo(() => {
+    const seen = new Set<string>()
+    return courses.filter((course) => {
+      const identity = String(
+        course.officialCourseNumber
+        || `${course.nameKo}|${course.nameEn}|${course.credits}`,
+      ).trim().toLowerCase()
+      if (seen.has(identity)) return false
+      seen.add(identity)
+      return true
+    })
+  }, [courses])
 
   useEffect(() => {
     const timer = window.setTimeout(async () => {
@@ -42,8 +54,11 @@ export function AddPastCourseModal({
       try {
         const result = await api.getCourseCatalog({
           page: 1,
-          pageSize: 30,
+          pageSize: 100,
           search: query,
+          myMajor: query.trim().length === 0,
+          sortBy: 'NAME',
+          sortDirection: 'ASC',
           academicYear: now.getFullYear(),
           semester: now.getMonth() + 1 >= 7 ? '2' : '1',
         })
@@ -63,7 +78,9 @@ export function AddPastCourseModal({
     try {
       await api.addPastCourse(Number(course.id), `${year}-${term}`, {
         finalGrade: finalGrade || null,
-        creditsEarned: creditsEarned === '' ? null : Number(creditsEarned),
+        creditsEarned: finalGrade
+          ? (['F', 'NP', 'U'].includes(finalGrade) ? 0 : course.credits)
+          : null,
       })
       await onAdded()
     } catch (reason) {
@@ -74,7 +91,7 @@ export function AddPastCourseModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 sm:items-center">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/35 sm:items-center sm:p-4">
       <div className="max-h-[88vh] w-full max-w-xl overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl">
         <div className="flex items-center justify-between border-b border-pnu-border px-4 py-3">
           <div>
@@ -86,20 +103,32 @@ export function AddPastCourseModal({
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 px-4 pt-3">
-          <select value={year} onChange={(event) => setYear(Number(event.target.value))} className="rounded-xl border border-pnu-border px-3 py-2 text-sm">
-            {years.map((item) => <option key={item} value={item}>{item}</option>)}
-          </select>
-          <select value={term} onChange={(event) => setTerm(event.target.value)} className="rounded-xl border border-pnu-border px-3 py-2 text-sm">
-            {['Spring', 'Summer', 'Fall', 'Winter'].map((item) => <option key={item}>{item}</option>)}
-          </select>
-        </div>
-        <div className="grid grid-cols-2 gap-2 px-4 pt-2">
-          <select value={finalGrade} onChange={(event) => setFinalGrade(event.target.value)} className="rounded-xl border border-pnu-border px-3 py-2 text-sm" aria-label={t('courses.finalGrade')}>
-            <option value="">{t('courses.gradeUnknown')}</option>
-            {['A+', 'A0', 'B+', 'B0', 'C+', 'C0', 'D+', 'D0', 'F', 'P', 'NP', 'S', 'U'].map((grade) => <option key={grade}>{grade}</option>)}
-          </select>
-          <input type="number" min="0" step="0.5" value={creditsEarned} onChange={(event) => setCreditsEarned(event.target.value)} placeholder={t('courses.creditsEarned')} className="rounded-xl border border-pnu-border px-3 py-2 text-sm" />
+        <div className="space-y-3 px-4 pt-3">
+          <div className="grid grid-cols-2 gap-2">
+            <label className="min-w-0">
+              <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-pnu-muted">{t('courseCatalog.academicYear')}</span>
+              <select value={year} onChange={(event) => setYear(Number(event.target.value))} className="w-full rounded-xl border border-pnu-border bg-[#FAFBFD] px-3 py-2.5 text-sm">
+                {years.map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </label>
+            <label className="min-w-0">
+              <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-pnu-muted">{t('courseCatalog.semester')}</span>
+              <select value={term} onChange={(event) => setTerm(event.target.value)} className="w-full rounded-xl border border-pnu-border bg-[#FAFBFD] px-3 py-2.5 text-sm">
+                {['Spring', 'Summer', 'Fall', 'Winter'].map((item) => <option key={item} value={item}>{t(`courseCatalog.${item.toLowerCase()}`)}</option>)}
+              </select>
+            </label>
+          </div>
+          <label className="block">
+            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-pnu-muted">{t('courses.finalGrade')}</span>
+            <select value={finalGrade} onChange={(event) => setFinalGrade(event.target.value)} className="w-full rounded-xl border border-pnu-border bg-[#FAFBFD] px-3 py-2.5 text-sm" aria-label={t('courses.finalGrade')}>
+              <option value="">{t('courses.gradeUnknown')}</option>
+              {['A+', 'A0', 'B+', 'B0', 'C+', 'C0', 'D+', 'D0', 'F', 'P', 'NP', 'S', 'U'].map((grade) => <option key={grade}>{grade}</option>)}
+            </select>
+            <span className="mt-1.5 flex items-center gap-1 text-[10px] text-pnu-muted">
+              <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+              {finalGrade ? t('courses.gradeAutoCredits') : t('courses.pendingDoesNotCount')}
+            </span>
+          </label>
         </div>
 
         <div className="relative px-4 py-3">
@@ -113,9 +142,15 @@ export function AddPastCourseModal({
         </div>
         {error ? <p className="mx-4 mb-2 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p> : null}
 
-        <div className="max-h-[55vh] overflow-y-auto border-t border-pnu-border">
+        <div className="flex items-center justify-between border-t border-pnu-border px-4 py-2 text-[10px] font-semibold text-pnu-muted">
+          <span>{t('courses.catalogMatches', { count: uniqueCourses.length })}</span>
+          {!query.trim() ? <span>{t('courseCatalog.myMajor')}</span> : null}
+        </div>
+
+        <div className="max-h-[45vh] overflow-y-auto border-t border-pnu-border">
           {loading ? <p className="p-6 text-center text-sm text-pnu-muted">{t('common.loading')}</p> : null}
-          {!loading && courses.map((course) => {
+          {!loading && uniqueCourses.length === 0 ? <p className="p-8 text-center text-sm text-pnu-muted">{t('courses.noCatalogMatches')}</p> : null}
+          {!loading && uniqueCourses.map((course) => {
             const exists = existingEnrollments.some((item) =>
               Number(item.catalog_course_id || item.course_id) === Number(course.id)
               && item.semester === `${year}-${term}`)

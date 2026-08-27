@@ -75,3 +75,17 @@ assets/
 # Supabase CLI (local)
 # =========================
 .supabase/
+
+# =========================
+# Temporary Data and Migration Scripts
+# =========================
+*.csv
+backend/scripts/01_insert_missing_majors.sql
+backend/scripts/02_prepare_course_schema.sql
+backend/scripts/03_restore_dependent_data.sql
+backend/scripts/build-course-import-data.js
+backend/scripts/build-full-sql.js
+backend/scripts/execute-migration.js
+backend/scripts/full_migration.sql
+backend/scripts/remap_major.js
+backend/scripts/update-major-korean-names.js

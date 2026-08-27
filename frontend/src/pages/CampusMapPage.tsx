@@ -93,9 +93,19 @@ function getBuildingColor(buildingNumber?: string | null, type?: string): string
   }
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function buildMarkerHtml(facility: MapFacility): string {
   const color = getBuildingColor(facility.buildingNumber, facility.type)
-  const label = facility.buildingNumber ? facility.buildingNumber.trim() : facility.name.slice(0, 3)
+  const rawLabel = facility.buildingNumber ? facility.buildingNumber.trim() : facility.name.slice(0, 3)
+  const label = escapeHtml(rawLabel)
 
   return `<div style="
     display: inline-flex;
@@ -118,6 +128,54 @@ function buildMarkerHtml(facility: MapFacility): string {
   ">${label}</div>`
 }
 
+/**
+ * Build the info-window content as real DOM nodes so the "view details"
+ * button gets its click listener attached exactly once, directly on the
+ * element. Unlike the previous `domready` + `document.querySelector`
+ * approach this cannot race, stack duplicate listeners, or grab another
+ * info window's button, and it never injects DB text as HTML.
+ */
+function buildInfoWindowContent(
+  facility: MapFacility,
+  viewDetailsLabel: string,
+  onViewDetails: () => void,
+): HTMLElement {
+  const wrapper = document.createElement('div')
+  wrapper.style.cssText = 'padding:10px 12px;min-width:160px;'
+
+  const title = document.createElement('strong')
+  title.style.cssText = 'display:block;font-size:13px;'
+  title.textContent = facility.buildingNumber
+    ? `[${facility.buildingNumber}] ${facility.name}`
+    : facility.name
+  wrapper.appendChild(title)
+
+  if (facility.nameKo) {
+    const nameKo = document.createElement('span')
+    nameKo.style.cssText = 'display:block;font-size:12px;color:#475569;'
+    nameKo.textContent = facility.nameKo
+    wrapper.appendChild(nameKo)
+  }
+
+  const type = document.createElement('span')
+  type.style.cssText = 'font-size:11px;color:#64748b;'
+  type.textContent = facility.type
+  wrapper.appendChild(type)
+
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.style.cssText =
+    'display:block;margin-top:8px;color:#005bac;font-size:12px;font-weight:600;background:none;border:none;padding:0;cursor:pointer;'
+  button.textContent = viewDetailsLabel
+  button.addEventListener('click', (event) => {
+    event.preventDefault()
+    onViewDetails()
+  })
+  wrapper.appendChild(button)
+
+  return wrapper
+}
+
 export function CampusMapPage() {
   const { t } = useLanguage()
   const navigate = useNavigate()
@@ -131,6 +189,7 @@ export function CampusMapPage() {
     }>
   >([])
   const activeInfoWindowRef = useRef<NaverInfoWindow | null>(null)
+  const pendingOpenRef = useRef<{ listener: unknown; timer?: number } | null>(null)
 
   const [facilities, setFacilities] = useState<MapFacility[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -171,22 +230,70 @@ export function CampusMapPage() {
 
   const nearbyVisible = showAllNearby ? nearby : nearby.slice(0, 3)
 
-  const focusFacility = useCallback((facility: MapFacility) => {
-    const naver = window.naver
-    const map = mapInstanceRef.current
-    if (!naver?.maps || !map) return
+  const openInfoWindow = useCallback(
+    (entry: { facility: MapFacility; marker: NaverMarker; infoWindow: NaverInfoWindow }) => {
+      const map = mapInstanceRef.current
+      if (!map) return
+      if (activeInfoWindowRef.current === entry.infoWindow) return
+      activeInfoWindowRef.current?.close()
+      entry.infoWindow.open(map, entry.marker)
+      activeInfoWindowRef.current = entry.infoWindow
+    },
+    [],
+  )
 
-    const entry = markersRef.current.find((item) => item.facility.id === facility.id)
-    if (!entry) return
+  const focusFacility = useCallback(
+    (facility: MapFacility) => {
+      const naver = window.naver
+      const map = mapInstanceRef.current
+      if (!naver?.maps || !map) return
 
-    activeInfoWindowRef.current?.close()
-    const position = new naver.maps.LatLng(facility.latitude, facility.longitude)
-    map.panTo(position)
-    map.setZoom(16, true)
-    entry.infoWindow.open(map, entry.marker)
-    activeInfoWindowRef.current = entry.infoWindow
-    setSelectedId(facility.id)
-  }, [])
+      const entry = markersRef.current.find((item) => item.facility.id === facility.id)
+      if (!entry) return
+
+      setSelectedId(facility.id)
+
+      // Cancel any open scheduled by a previous focus before scheduling a new one.
+      if (pendingOpenRef.current) {
+        const { listener, timer } = pendingOpenRef.current
+        if (listener && naver.maps.Event.removeListener) {
+          naver.maps.Event.removeListener(listener)
+        }
+        if (timer !== undefined) {
+          window.clearTimeout(timer)
+        }
+        pendingOpenRef.current = null
+      }
+
+      const position = new naver.maps.LatLng(facility.latitude, facility.longitude)
+      const center = map.getCenter()
+      const settled =
+        Math.abs(center.lat() - facility.latitude) < 1e-6 &&
+        Math.abs(center.lng() - facility.longitude) < 1e-6 &&
+        map.getZoom() >= 16
+
+      // Already centered on this building at detail zoom — open immediately.
+      if (settled) {
+        openInfoWindow(entry)
+        return
+      }
+
+      // Otherwise pan/zoom first and open once the animation settles, so the
+      // box is anchored to the marker's final on-screen position instead of
+      // being clipped or misplaced mid-animation.
+      map.panTo(position)
+      map.setZoom(16, true)
+
+      if (naver.maps.Event.once) {
+        const listener = naver.maps.Event.once(map, 'idle', () => openInfoWindow(entry))
+        pendingOpenRef.current = { listener }
+      } else {
+        const timer = window.setTimeout(() => openInfoWindow(entry), 350)
+        pendingOpenRef.current = { listener: null, timer }
+      }
+    },
+    [openInfoWindow],
+  )
 
   const recenter = useCallback(() => {
     const naver = window.naver
@@ -257,7 +364,8 @@ export function CampusMapPage() {
     const map = new naver.maps.Map(mapRef.current, { center, zoom: 15 })
     mapInstanceRef.current = map
 
-    activeInfoWindowRef.current?.close()
+    activeInfoWindowRef.current = null
+    pendingOpenRef.current = null
     markersRef.current = []
 
     facilities.forEach((facility) => {
@@ -273,25 +381,15 @@ export function CampusMapPage() {
       })
 
       const infoWindow = new naver.maps.InfoWindow({
-        content: `<div style="padding:10px 12px;min-width:160px;">
-          <strong style="display:block;font-size:13px;">${facility.buildingNumber ? `[${facility.buildingNumber}] ` : ''}${facility.name}</strong>
-          ${facility.nameKo ? `<span style="display:block;font-size:12px;color:#475569;">${facility.nameKo}</span>` : ''}
-          <span style="font-size:11px;color:#64748b;">${facility.type}</span>
-          <button type="button" data-facility-id="${facility.id}" style="display:block;margin-top:8px;color:#005bac;font-size:12px;font-weight:600;background:none;border:none;padding:0;cursor:pointer;">View details →</button>
-        </div>`,
+        content: buildInfoWindowContent(facility, t('campusMap.viewDetails'), () =>
+          navigate(`/map/${facility.id}`),
+        ),
       })
 
       naver.maps.Event.addListener(marker, 'click', () => focusFacility(facility))
-      naver.maps.Event.addListener(infoWindow, 'domready', () => {
-        const btn = document.querySelector(`[data-facility-id="${facility.id}"]`)
-        btn?.addEventListener('click', (e) => {
-          e.preventDefault()
-          navigate(`/map/${facility.id}`)
-        })
-      })
       markersRef.current.push({ facility, marker, infoWindow })
     })
-  }, [facilities, focusFacility, mapReady, navigate])
+  }, [facilities, focusFacility, mapReady, navigate, t])
 
   useEffect(() => {
     const filteredIds = new Set(filtered.map((f) => f.id))
@@ -398,10 +496,7 @@ export function CampusMapPage() {
                 <button
                   key={facility.id}
                   type="button"
-                  onClick={() => {
-                    focusFacility(facility)
-                    navigate(`/map/${facility.id}`)
-                  }}
+                  onClick={() => navigate(`/map/${facility.id}`)}
                   className={`flex w-full items-center gap-3 rounded-[18px] bg-white p-3.5 text-left shadow-sm ring-1 transition active:scale-[0.99] ${
                     isSelected ? 'ring-pnu-blue/40' : 'ring-black/5'
                   }`}

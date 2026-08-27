@@ -1,6 +1,8 @@
 const {
   filterCourses,
   filterCoursesByOffering,
+  filterCoursesByLanguage,
+  sortCourses,
   findOfficialOffering,
   mapOffering,
 } = require('../services/courseCatalogService');
@@ -99,6 +101,8 @@ describe('course catalog curriculum mapping', () => {
       semester: '2',
       enrollment_limit: 40,
       team_teaching_status: 'TEAM_TAUGHT',
+      original_language_code: 'E',
+      teaching_language: 'ENGLISH',
       general_education_area: null,
       remarks: 'International students may request permission.',
       schedule: null,
@@ -111,9 +115,33 @@ describe('course catalog curriculum mapping', () => {
     expect(offering).toMatchObject({
       enrollmentLimit: 40,
       teamTeachingStatus: 'TEAM_TAUGHT',
+      originalLanguageCode: 'E',
+      teachingLanguage: 'ENGLISH',
+      isEnglishTaught: true,
       remarks: 'International students may request permission.',
       restrictions: [{ id: 7, permission: 'PROHIBITED', departmentCondition: 'Other departments' }],
     });
+  });
+
+  test('filters offering languages without treating missing metadata as Korean', () => {
+    const rows = [
+      course({ id: '1', teachingLanguage: 'ENGLISH', isEnglishTaught: true }),
+      course({ id: '2', teachingLanguage: 'KOREAN', isEnglishTaught: false }),
+      course({ id: '3', teachingLanguage: null, originalLanguageCode: null, isEnglishTaught: null }),
+    ];
+    expect(filterCoursesByLanguage(rows, 'ENGLISH')).toEqual([rows[0]]);
+    expect(filterCoursesByLanguage(rows, 'KOREAN')).toEqual([rows[1]]);
+    expect(filterCoursesByLanguage(rows, 'UNKNOWN')).toEqual([rows[2]]);
+  });
+
+  test('sorts deterministically by name, credits, or course code', () => {
+    const rows = [
+      course({ id: '2', nameEn: 'Beta', credits: 2, officialCourseNumber: 'B200' }),
+      course({ id: '1', nameEn: 'Alpha', credits: 3, officialCourseNumber: 'A100' }),
+    ];
+    expect(sortCourses(rows, 'NAME', 'ASC').map((row) => row.id)).toEqual(['1', '2']);
+    expect(sortCourses(rows, 'CREDITS', 'DESC').map((row) => row.id)).toEqual(['1', '2']);
+    expect(sortCourses(rows, 'CODE', 'DESC').map((row) => row.id)).toEqual(['2', '1']);
   });
 
   test('uses the indexed official schedule when production has only a partial legacy time', () => {

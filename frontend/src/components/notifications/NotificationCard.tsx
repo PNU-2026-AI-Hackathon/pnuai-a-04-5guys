@@ -3,7 +3,7 @@ import type { Notification } from '@/types/api'
 import { Card } from '@/components/ui/Card'
 import { Bell, CalendarDays } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
-import { isExternalNotice, noticeHref } from '@/utils/notices'
+import { noticeHref } from '@/utils/notices'
 
 function formatDate(iso: string | null | undefined, locale: string) {
   if (!iso) return null
@@ -20,7 +20,6 @@ export function NotificationCard({ notification }: { notification: Notification 
   const { locale, t } = useLanguage()
   const isHigh = notification.priority === 'HIGH'
   const href = noticeHref(notification)
-  const external = isExternalNotice(notification)
   const formattedDate = formatDate(notification.date, locale)
   const titleClass = 'text-sm font-semibold text-pnu-text hover:text-pnu-blue-light'
 
@@ -37,15 +36,9 @@ export function NotificationCard({ notification }: { notification: Notification 
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            {external ? (
-              <a href={href} target="_blank" rel="noreferrer" className={titleClass}>
-                {notification.title}
-              </a>
-            ) : (
-              <Link to={href} className={titleClass}>
-                {notification.title}
-              </Link>
-            )}
+            <Link to={href} className={titleClass}>
+              {notification.title}
+            </Link>
             {isHigh ? (
               <span className="shrink-0 rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">
                 {t('common.high')}

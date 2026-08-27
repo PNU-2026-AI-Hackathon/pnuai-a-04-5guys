@@ -4,6 +4,7 @@ const {
   fetchCourseCurriculum,
   fetchCourseMetadata,
   fetchCourseOfferings,
+  explicitEnglishStatus,
 } = require('../ai/supabaseDataRepository');
 const { parseOfferingSchedule } = require('./timetableService');
 const officialCourseProvenance = require('../config/pnu-course-provenance-2026-2.json');
@@ -59,6 +60,8 @@ function mapRestriction(row) {
 }
 
 function mapOffering(row, metadata = null, restrictions = []) {
+  const originalLanguageCode = row.original_language_code || null;
+  const teachingLanguage = row.teaching_language || null;
   return {
     courseOfferingId: Number(row.course_offering_id),
     officialCourseNumber: row.official_course_number || null,
@@ -68,8 +71,12 @@ function mapOffering(row, metadata = null, restrictions = []) {
     professor: row.professor || null,
     schedule: row.schedule || null,
     classroom: row.classroom || null,
-    teachingLanguage: row.teaching_language || null,
+    originalLanguageCode,
+    teachingLanguage,
+    isEnglishTaught: explicitEnglishStatus(originalLanguageCode, teachingLanguage),
     remoteCourseStatus: row.remote_course_status || null,
+    theoryHours: row.theory_hours == null ? null : Number(row.theory_hours),
+    practicalHours: row.practical_hours == null ? null : Number(row.practical_hours),
     enrollmentLimit: row.enrollment_limit == null ? null : Number(row.enrollment_limit),
     teamTeachingStatus: row.team_teaching_status || null,
     generalEducationArea: row.general_education_area || null,
@@ -204,6 +211,34 @@ function filterCoursesByOffering(courses, offeringRows, offeredOnly) {
   return courses.filter((course) => offeredCourseIds.has(String(course.id)));
 }
 
+function filterCoursesByLanguage(courses, languageFilter) {
+  const filter = String(languageFilter || 'ALL').toUpperCase();
+  if (filter === 'ALL') return courses;
+  return courses.filter((course) => {
+    if (filter === 'ENGLISH') return course.isEnglishTaught === true;
+    if (filter === 'UNKNOWN') {
+      return course.isEnglishTaught == null && !course.teachingLanguage && !course.originalLanguageCode;
+    }
+    if (filter === 'OTHER') {
+      return course.teachingLanguage === 'OTHER'
+        || ['C', 'J', 'F', 'G', 'R'].includes(String(course.originalLanguageCode || '').toUpperCase());
+    }
+    return String(course.teachingLanguage || '').toUpperCase() === filter;
+  });
+}
+
+function sortCourses(courses, sortBy, sortDirection) {
+  const field = String(sortBy || 'NAME').toUpperCase();
+  const direction = String(sortDirection || 'ASC').toUpperCase() === 'DESC' ? -1 : 1;
+  return [...courses].sort((a, b) => {
+    let comparison = 0;
+    if (field === 'CREDITS') comparison = Number(a.credits || 0) - Number(b.credits || 0);
+    else if (field === 'CODE') comparison = String(a.officialCourseNumber || '').localeCompare(String(b.officialCourseNumber || ''));
+    else comparison = String(a.nameEn || a.nameKo).localeCompare(String(b.nameEn || b.nameKo));
+    return comparison * direction || Number(a.id) - Number(b.id);
+  });
+}
+
 async function listCourseCatalog(supabase, options = {}) {
   const page = positiveInteger(options.page, 1);
   const pageSize = positiveInteger(options.pageSize, 50, 100);
@@ -307,6 +342,12 @@ async function listCourseCatalog(supabase, options = {}) {
       semester: officialOffering?.semester ?? options.semester ?? '2',
       section: officialOffering?.section || course.section || null,
       professor: officialOffering?.professor || indexedOfficialOffering?.professor || course.professor || null,
+      originalLanguageCode: officialOffering?.originalLanguageCode ?? course.originalLanguageCode ?? null,
+      teachingLanguage: officialOffering?.teachingLanguage ?? course.teachingLanguage ?? null,
+      isEnglishTaught: officialOffering?.isEnglishTaught ?? course.isEnglishTaught ?? null,
+      remoteCourseStatus: officialOffering?.remoteCourseStatus ?? course.remoteCourseStatus ?? null,
+      theoryHours: officialOffering?.theoryHours ?? course.theoryHours ?? null,
+      practicalHours: officialOffering?.practicalHours ?? course.practicalHours ?? null,
       schedule,
       classroom,
       enrollmentLimit: officialOffering?.enrollmentLimit ?? null,
@@ -317,9 +358,8 @@ async function listCourseCatalog(supabase, options = {}) {
     };
   });
 
-  courses.sort((a, b) =>
-    String(a.nameEn || a.nameKo).localeCompare(String(b.nameEn || b.nameKo))
-    || Number(a.id) - Number(b.id));
+  courses = filterCoursesByLanguage(courses, options.languageFilter);
+  courses = sortCourses(courses, options.sortBy, options.sortDirection);
   const total = courses.length;
   const offset = (page - 1) * pageSize;
   const items = courses.slice(offset, offset + pageSize);
@@ -371,6 +411,8 @@ async function listCourseCatalog(supabase, options = {}) {
 module.exports = {
   filterCourses,
   filterCoursesByOffering,
+  filterCoursesByLanguage,
+  sortCourses,
   fetchCourseSourceDetails,
   fetchOfferingRestrictions,
   isMissingOptionalRelation,

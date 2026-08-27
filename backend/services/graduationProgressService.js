@@ -30,6 +30,20 @@ function isActiveEnrollmentStatus(status) {
   );
 }
 
+function earnedCreditsForEnrollment(enrollment) {
+  const explicit = enrollment?.credits_earned;
+  if (explicit !== null && explicit !== undefined && explicit !== "") {
+    const parsed = Number(explicit);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+  }
+
+  const grade = String(enrollment?.final_grade || enrollment?.grade || "")
+    .trim()
+    .toUpperCase();
+  if (!grade || ["F", "NP", "U"].includes(grade)) return 0;
+  return Number(enrollment?.credit) || Number(enrollment?.credits) || 0;
+}
+
 function mapEnrollmentToCreditBucket(category) {
   const c = String(category || "")
     .trim()
@@ -65,6 +79,18 @@ function mapEnrollmentToCreditBucket(category) {
   if (c.includes("major") || c.includes("전공")) return "majorRequired";
   if (c.includes("gen") || c.includes("교양")) return "generalElective";
   return "generalFree";
+}
+
+function creditBucketForEnrollment(enrollment, studentMajorId = null) {
+  const bucket = mapEnrollmentToCreditBucket(enrollment?.category);
+  const courseMajorId = enrollment?.course_major_id;
+  const isKnownOtherMajor = studentMajorId != null
+    && courseMajorId != null
+    && String(studentMajorId) !== String(courseMajorId);
+  if (isKnownOtherMajor && ["majorBasic", "majorRequired", "majorElective"].includes(bucket)) {
+    return "generalFree";
+  }
+  return bucket;
 }
 
 function emptyBreakdown(requirements = DEFAULT_CREDIT_REQUIREMENTS) {
@@ -148,8 +174,8 @@ function letterToGradePoint(letter) {
   return map[normalized] !== undefined ? map[normalized] : null;
 }
 
-function isMajorCategory(category) {
-  const bucket = mapEnrollmentToCreditBucket(category);
+function isMajorCategory(enrollment, studentMajorId = null) {
+  const bucket = creditBucketForEnrollment(enrollment, studentMajorId);
   return (
     bucket === "majorBasic" ||
     bucket === "majorRequired" ||
@@ -157,7 +183,7 @@ function isMajorCategory(category) {
   );
 }
 
-function computeGpaFromEnrollments(enrollments = []) {
+function computeGpaFromEnrollments(enrollments = [], studentMajorId = null) {
   let totalGradePoints = 0;
   let totalGradedCredits = 0;
 
@@ -170,24 +196,24 @@ function computeGpaFromEnrollments(enrollments = []) {
 
   for (const row of enrollments) {
     const isCompleted = isCompletedEnrollmentStatus(row.status);
-    const credits =
+    const attemptedCredits =
       Number(row.credit) ||
       Number(row.credits) ||
       Number(row.credits_earned) ||
       0;
 
     if (isCompleted) {
-      totalCompletedCredits += credits;
+      totalCompletedCredits += earnedCreditsForEnrollment(row);
     }
 
     const gradePoint = letterToGradePoint(row.final_grade || row.grade);
-    if (gradePoint !== null && credits > 0) {
-      totalGradePoints += gradePoint * credits;
-      totalGradedCredits += credits;
+    if (gradePoint !== null && attemptedCredits > 0) {
+      totalGradePoints += gradePoint * attemptedCredits;
+      totalGradedCredits += attemptedCredits;
 
-      if (isMajorCategory(row.category)) {
-        majorGradePoints += gradePoint * credits;
-        majorGradedCredits += credits;
+      if (isMajorCategory(row, studentMajorId)) {
+        majorGradePoints += gradePoint * attemptedCredits;
+        majorGradedCredits += attemptedCredits;
       }
 
       const semKey = row.semester || "Other";
@@ -199,8 +225,8 @@ function computeGpaFromEnrollments(enrollments = []) {
         });
       }
       const semEntry = semesterMap.get(semKey);
-      semEntry.gradePoints += gradePoint * credits;
-      semEntry.credits += credits;
+      semEntry.gradePoints += gradePoint * attemptedCredits;
+      semEntry.credits += attemptedCredits;
     }
   }
 
@@ -263,13 +289,14 @@ function buildGraduationProgress({
   academicSummary = null,
   semesters = [],
   catalogRequired = 0,
+  studentMajorId = null,
 } = {}) {
   const breakdown = emptyBreakdown();
 
   for (const enrollment of enrollments) {
     if (!isCompletedEnrollmentStatus(enrollment.status)) continue;
-    const bucket = mapEnrollmentToCreditBucket(enrollment.category);
-    breakdown[bucket].completed += Number(enrollment.credit) || 0;
+    const bucket = creditBucketForEnrollment(enrollment, studentMajorId);
+    breakdown[bucket].completed += earnedCreditsForEnrollment(enrollment);
   }
 
   let totalCompleted = Object.values(breakdown).reduce(
@@ -297,7 +324,7 @@ function buildGraduationProgress({
     distributeCompletedCredits(breakdown, totalCompleted);
   }
 
-  const computed = computeGpaFromEnrollments(enrollments);
+  const computed = computeGpaFromEnrollments(enrollments, studentMajorId);
 
   const hasCompletedCoursework =
     totalCompleted > 0 ||
@@ -380,6 +407,8 @@ module.exports = {
   toApiPayload,
   isCompletedEnrollmentStatus,
   mapEnrollmentToCreditBucket,
+  creditBucketForEnrollment,
+  earnedCreditsForEnrollment,
   gpaToLetter,
   letterToGradePoint,
   computeGpaFromEnrollments,

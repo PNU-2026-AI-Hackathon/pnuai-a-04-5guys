@@ -25,7 +25,7 @@ import { LatestNoticeCarousel } from '@/components/home/LatestNoticeCarousel'
 import { useLanguage } from '@/context/LanguageContext'
 import { useNoticeRefresh } from '@/context/NoticeRefreshContext'
 import type { NoticeChannel, Notification, ScholarshipItem } from '@/types/api'
-import { isExternalNotice, noticeHref } from '@/utils/notices'
+import { noticeHref } from '@/utils/notices'
 import { mergeNoticeFeed } from '@/utils/noticeFeed'
 import { useSavedNotices } from '@/utils/savedNotices'
 
@@ -366,7 +366,6 @@ export function NotificationsPage() {
                   const Icon = item.Icon
                   const saved = isNoticeSaved(item.id)
                   const href = noticeHref(item)
-                  const external = isExternalNotice(item)
                   return (
                     <li key={item.id}>
                       <div
@@ -376,57 +375,29 @@ export function NotificationsPage() {
                         <span
                           className={`mt-4 h-1.5 w-1.5 shrink-0 rounded-full ${item.dotTone}`}
                         />
-                        {external ? (
-                          <a
-                            href={href}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex min-w-0 flex-1 items-start gap-2.5"
+                        <Link
+                          to={href}
+                          className="flex min-w-0 flex-1 items-start gap-2.5"
+                        >
+                          <span
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] ${item.iconTone}`}
                           >
-                            <span
-                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] ${item.iconTone}`}
-                            >
-                              <Icon className="h-[18px] w-[18px]" strokeWidth={1.9} />
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <p className={`text-[10px] font-bold ${item.channelTextTone}`}>
-                                {t(item.channelLabelKey)}
+                            <Icon className="h-[18px] w-[18px]" strokeWidth={1.9} />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className={`text-[10px] font-bold ${item.channelTextTone}`}>
+                              {t(item.channelLabelKey)}
+                            </p>
+                            <p className="mt-0.5 line-clamp-2 text-[13px] font-bold leading-snug text-pnu-text">
+                              {item.title}
+                            </p>
+                            {item.source ? (
+                              <p className="mt-0.5 truncate text-[11px] font-medium text-pnu-muted">
+                                {item.source}
                               </p>
-                              <p className="mt-0.5 line-clamp-2 text-[13px] font-bold leading-snug text-pnu-text">
-                                {item.title}
-                              </p>
-                              {item.source ? (
-                                <p className="mt-0.5 truncate text-[11px] font-medium text-pnu-muted">
-                                  {item.source}
-                                </p>
-                              ) : null}
-                            </div>
-                          </a>
-                        ) : (
-                          <Link
-                            to={href}
-                            className="flex min-w-0 flex-1 items-start gap-2.5"
-                          >
-                            <span
-                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] ${item.iconTone}`}
-                            >
-                              <Icon className="h-[18px] w-[18px]" strokeWidth={1.9} />
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <p className={`text-[10px] font-bold ${item.channelTextTone}`}>
-                                {t(item.channelLabelKey)}
-                              </p>
-                              <p className="mt-0.5 line-clamp-2 text-[13px] font-bold leading-snug text-pnu-text">
-                                {item.title}
-                              </p>
-                              {item.source ? (
-                                <p className="mt-0.5 truncate text-[11px] font-medium text-pnu-muted">
-                                  {item.source}
-                                </p>
-                              ) : null}
-                            </div>
-                          </Link>
-                        )}
+                            ) : null}
+                          </div>
+                        </Link>
                         <div className="flex shrink-0 flex-col items-end gap-2">
                           {formatDate(item.date, locale) ? (
                             <span className="text-[10px] font-medium text-pnu-muted">

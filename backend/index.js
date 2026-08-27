@@ -53,6 +53,14 @@ app.use((req, res, next) => {
 
   return next();
 });
+// No auth, no DB, no side effects — the only job here is to answer fast so an
+// external pinger can keep the free-tier instance from sleeping. Placed before
+// every other middleware so a cold instance responds as quickly as possible,
+// and so a ping never depends on Supabase being reachable.
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 app.use(languageMiddleware);
 app.use(express.static("public"));
 app.use(languageInterceptor);

@@ -1,0 +1,45 @@
+name: Keep API Awake
+
+# Render's free tier sleeps a web service after ~15 minutes with no traffic,
+# and the first request after that takes 30-50 seconds to answer while the
+# instance boots. Pinging on a schedule keeps it warm so a judge — or a
+# teammate testing before a demo — never hits a cold start.
+#
+# The static frontend (heypnu-web) is NOT pinged here and does not need it:
+# Render serves static sites like a CDN, with no server process to sleep.
+# Only the API (heypnu-api) has this problem.
+#
+# Runs every 10 minutes rather than every 14 to leave margin for GitHub's own
+# scheduling jitter, which can delay a cron trigger by several minutes under
+# load. workflow_dispatch is included so this can be fired manually right
+# before a presentation for an immediate extra ping.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/10 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keep-api-awake
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping the API health endpoint
+        run: |
+          url="https://omo-korea.onrender.com/health"
+          echo "Pinging $url"
+          start=$(date +%s)
+          status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 "$url")
+          elapsed=$(( $(date +%s) - start ))
+          echo "HTTP $status in ${elapsed}s"
+          if [ "$status" != "200" ]; then
+            echo "::error::API health check returned $status instead of 200"
+            exit 1
+          fi

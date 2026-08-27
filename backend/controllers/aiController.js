@@ -1178,6 +1178,8 @@ const { buildStudentDashboard } = require('../ai/studentDashboardEngine');
 const { analyzeMajorGap } = require('../ai/gapAnalysisEngine');
 const { recommendCourses } = require('../ai/courseRecommendationEngine');
 const { recommendNotices } = require('../ai/noticeRecommendationEngine');
+const { translateNotices } = require('../services/noticeTranslationService');
+const { extractNoticeInfo } = require('../services/noticeExtractionService');
 const { adaptStudentProfile } = require('../ai/studentProfileAdapter');
 const {
   attachCourseCurriculum,
@@ -1630,24 +1632,39 @@ async function getStudentNotifications(req, res, next) {
       { limit: 10 }
     );
 
-    const noticeNotifications = recommendedNotices.map(
-      (notice) => ({
-        id: notice.id,
-        kind: "NOTICE",
-        title: notice.title,
-        body: notice.body,
-        date: notice.deadline ?? notice.postedDate ?? null,
-        postedDate: notice.postedDate,
-        deadline: notice.deadline,
-        languages: notice.languages,
-        category: notice.category,
-        priority: notice.priority,
-        source: notice.source,
-        sourceUrl: notice.sourceUrl,
-        score: notice.score,
-        matchHint: notice.matchHint,
-      }),
-    );
+    const noticeBase = recommendedNotices.map((notice) => ({
+      id: notice.id,
+      kind: "NOTICE",
+      title: notice.title,
+      body: notice.body,
+      date: notice.deadline ?? notice.postedDate ?? null,
+      postedDate: notice.postedDate,
+      deadline: notice.deadline,
+      languages: notice.languages,
+      category: notice.category,
+      priority: notice.priority,
+      source: notice.source,
+      sourceUrl: notice.sourceUrl,
+      score: notice.score,
+      matchHint: notice.matchHint,
+    }));
+    // Independent AI calls — extraction reads original Korean text
+    // regardless of the requested display language, so it doesn't need to
+    // wait on translation to finish.
+    const [translatedNoticeNotifications, extractedNoticeInfo] = await Promise.all([
+      translateNotices(noticeBase, language),
+      extractNoticeInfo(noticeBase),
+    ]);
+    const noticeNotifications = translatedNoticeNotifications.map((notice, index) => {
+      const deadline = notice.deadline || extractedNoticeInfo[index]?.deadline || null;
+      return {
+        ...notice,
+        deadline,
+        eligibility: extractedNoticeInfo[index]?.eligibility ?? null,
+        requiredDocuments: extractedNoticeInfo[index]?.requiredDocuments ?? [],
+        date: deadline || notice.postedDate || null,
+      };
+    });
 
     const orderedChecklistNotifications = checklistNotifications.sort(
       (a, b) => {
@@ -1696,7 +1713,7 @@ async function getPrograms(req, res, next) {
     const programs = await fetchRecommendedPrograms({
       studentProfile: context.rawStudentInput.profile || {},
       userTags: context.rawStudentInput.profile.interests || [],
-      limit: 50,
+      limit: 200,
       language,
     });
 
@@ -1763,5 +1780,6 @@ module.exports = {
   getPrograms,
   getProgramDetail,
   getStudentNotifications,
+  fetchStudentContext,
 };
 

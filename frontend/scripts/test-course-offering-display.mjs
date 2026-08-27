@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
+import { dirname, isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const require = createRequire(import.meta.url)
@@ -39,7 +39,7 @@ function resolveAlias(specifier) {
  * loader rather than at the import that caused it.
  */
 function loadTypeScriptModule(pathOrAbsolute) {
-  const absolute = pathOrAbsolute.startsWith('/')
+  const absolute = isAbsolute(pathOrAbsolute)
     ? pathOrAbsolute
     : join(frontendRoot, pathOrAbsolute)
   const cached = tsModuleCache.get(absolute)
@@ -240,22 +240,80 @@ assert.match(courseDetailSource, /course\.restrictions/)
 
 const recommendationSource = readSource('src/pages/RecommendedCoursesPage.tsx')
 assert.match(recommendationSource, /courseId: course\.id,[\s\S]*academicYear,[\s\S]*semester,/)
+assert.match(recommendationSource, /CourseListControls/)
+assert.match(recommendationSource, /filterAndSortCourses/)
 
 const dashboardSource = readSource('src/pages/CoursesDashboardPage.tsx')
+assert.match(dashboardSource, /useState<CourseType \| 'ALL'>\('전공'\)/)
 assert.match(dashboardSource, /api\.createEnrollment\(user\.studentId, courseId, enrollmentSemester\(term\)\)/)
 assert.match(dashboardSource, /api\.createTimetableEntry\(data\)/)
 assert.match(dashboardSource, /api\.deleteEnrollment\(Number\(enrollment\.enrollment_id\)\)/)
 assert.match(dashboardSource, /catalogTotal\.toLocaleString\(\)/)
 assert.match(dashboardSource, /catalogHasMore/)
 assert.match(dashboardSource, /recommendedYear/)
-assert.match(dashboardSource, /myMajor: catalogCategory === '전공'/)
+assert.match(dashboardSource, /api\.getMajors\(\)/)
+assert.match(dashboardSource, /myMajor: !appliedCatalogFilters\.majorId/)
+assert.match(dashboardSource, /majorId: appliedCatalogFilters\.majorId \? Number\(appliedCatalogFilters\.majorId\) : undefined/)
+assert.match(dashboardSource, /languageFilter: appliedCatalogFilters\.languageFilter/)
+assert.match(dashboardSource, /sortBy: appliedCatalogFilters\.sortBy/)
+assert.match(dashboardSource, /sortDirection: appliedCatalogFilters\.sortDirection/)
+assert.match(dashboardSource, /CourseListControls/)
+assert.match(dashboardSource, /pastGradeFilter/)
+assert.match(dashboardSource, /courses\.searchPastPlaceholder/)
+assert.match(dashboardSource, /courses\.graduationSyncHelp/)
+assert.match(dashboardSource, /recentPastTerms/)
+assert.match(dashboardSource, /function searchCatalog\(/)
+assert.match(dashboardSource, /type="submit"/)
+assert.match(dashboardSource, /<CourseTypeBadge[\s\S]*showOriginalTypeForOtherMajor/)
 assert.match(dashboardSource, /Add to My Courses|courses\.addCurrent/)
 
 const academicSource = readSource('src/pages/AcademicPage.tsx')
 assert.match(academicSource, /timetableCredits/)
 assert.match(academicSource, /schedule\.plannedCredits/)
+assert.match(academicSource, /useState<'DAILY' \| 'GRID'>\('GRID'\)/)
+assert.match(academicSource, /CourseTermSelector value=\{term\} onChange=\{setTerm\}/)
+assert.match(academicSource, /enrollmentSemester\(term\)/)
+assert.match(academicSource, /CourseListControls/)
+assert.match(academicSource, /languageFilter: catalogLanguage/)
+assert.match(academicSource, /sortBy: catalogSort/)
+assert.match(academicSource, /sortDirection: catalogDirection/)
+assert.doesNotMatch(academicSource, /schedule\.recurringWeekly/)
+
+const addPastCourseSource = readSource('src/components/courses/AddPastCourseModal.tsx')
+assert.match(addPastCourseSource, /uniqueCourses/)
+assert.match(addPastCourseSource, /creditsEarned: finalGrade/)
+
+const editPastCourseSource = readSource('src/components/courses/EditPastCourseModal.tsx')
+assert.match(editPastCourseSource, /z-\[100\]/)
+assert.match(editPastCourseSource, /<footer/)
+assert.match(editPastCourseSource, /courses\.recordGrade/)
+assert.match(editPastCourseSource, /const TERMS = \['Spring', 'Summer', 'Fall', 'Winter'\]/)
+assert.match(readSource('src/i18n/locales/en.ts'), /courses\.autoIncluded/)
+
+const badgeSource = readSource('src/components/ui/Badge.tsx')
+assert.match(badgeSource, /showOriginalTypeForOtherMajor/)
+
+const courseCardSource = readSource('src/components/courses/CourseCard.tsx')
+assert.match(courseCardSource, /getCourseLanguageBadgeKey/)
+
+const listControlsSource = readSource('src/components/courses/CourseListControls.tsx')
+assert.match(listControlsSource, /courseCatalog\.languageFilter/)
+assert.match(listControlsSource, /courseCatalog\.sortBy/)
+assert.match(listControlsSource, /courseCatalog\.sortDirection/)
+
+const courseListSource = readSource('src/utils/courseList.ts')
+assert.match(courseListSource, /matchesCourseLanguage/)
+assert.match(courseListSource, /sortBy === 'RELEVANCE'/)
 
 assert.match(recommendationSource, /getRecommendedCourses\('ALL', \{ academicYear, semester \}\)/)
 assert.match(readSource('src/pages/ScholarshipsPage.tsx'), /scholarships\.noticeSourceDisclosure/)
 
-console.log('Course, timetable, recommendation, scholarship, and metadata frontend checks passed: 61 assertions')
+const programsSource = readSource('src/pages/ProgramsPage.tsx')
+assert.match(programsSource, /const RECOMMENDED_LIMIT = 3/)
+assert.match(programsSource, /useState<ProgramTab>\('all'\)/)
+assert.match(programsSource, /categoryFilter/)
+assert.match(programsSource, /statusFilter/)
+assert.match(programsSource, /sortDirection/)
+assert.match(programsSource, /programs\.topThree/)
+
+console.log('Course, timetable, recommendation, scholarship, program, and metadata frontend checks passed: 106 assertions')

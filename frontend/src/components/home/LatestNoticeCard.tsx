@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 import type { Notification } from '@/types/api'
 import { useLanguage } from '@/context/LanguageContext'
-import { isExternalNotice, noticeHref } from '@/utils/notices'
+import { noticeHref } from '@/utils/notices'
 
 interface LatestNoticeCardProps {
   notice: Notification | null
@@ -25,7 +25,6 @@ export function LatestNoticeCard({ notice }: LatestNoticeCardProps) {
   }
 
   const href = noticeHref(notice)
-  const external = isExternalNotice(notice)
   const className =
     'block rounded-[16px] bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 transition active:scale-[0.99]'
 
@@ -44,21 +43,12 @@ export function LatestNoticeCard({ notice }: LatestNoticeCardProps) {
         </Link>
       </div>
 
-      {external ? (
-        <a href={href} target="_blank" rel="noreferrer" className={className}>
-          <p className="truncate text-[13px] font-semibold text-pnu-text">{notice.title}</p>
-          <p className="mt-0.5 line-clamp-1 text-[11px] leading-snug text-pnu-muted">
-            {notice.body}
-          </p>
-        </a>
-      ) : (
-        <Link to={href} className={className}>
-          <p className="truncate text-[13px] font-semibold text-pnu-text">{notice.title}</p>
-          <p className="mt-0.5 line-clamp-1 text-[11px] leading-snug text-pnu-muted">
-            {notice.body}
-          </p>
-        </Link>
-      )}
+      <Link to={href} className={className}>
+        <p className="truncate text-[13px] font-semibold text-pnu-text">{notice.title}</p>
+        <p className="mt-0.5 line-clamp-1 text-[11px] leading-snug text-pnu-muted">
+          {notice.body}
+        </p>
+      </Link>
     </section>
   )
 }

@@ -1,6 +1,9 @@
 /** Shared API types — keep in sync with backend OpenAPI / PROJECT_SPEC.md */
 
 export type CourseType = '전공' | '효원핵심교양' | '효원균형교양' | '효원창의교양' | '일반선택' | '교직과목' | '전공기초' | '전공필수' | '전공선택'
+export type CourseLanguageFilter = 'ALL' | 'ENGLISH' | 'KOREAN' | 'MIXED' | 'OTHER' | 'UNKNOWN'
+export type CourseSortKey = 'RELEVANCE' | 'NAME' | 'CREDITS' | 'CODE'
+export type SortDirection = 'ASC' | 'DESC'
 
 export type NotificationCategory = string
 export type NotificationPriority = string
@@ -478,6 +481,9 @@ export interface CourseCatalogParams {
   academicYear?: number
   semester?: '1' | '2' | 'SUMMER' | 'WINTER'
   courseId?: string | number
+  languageFilter?: CourseLanguageFilter
+  sortBy?: Exclude<CourseSortKey, 'RELEVANCE'>
+  sortDirection?: SortDirection
 }
 
 export interface RecommendedMajor {
@@ -636,10 +642,16 @@ export interface Notification {
   channel?: NoticeChannel | null
   /** External original post URL when scraped from a PNU board */
   sourceUrl?: string | null
+  originalTitle?: string | null
+  originalBody?: string | null
+  translationLanguage?: string | null
   score?: number | null
   matchHint?: string | null
   status?: string | null
   read?: boolean
+  /** AI-extracted from the notice text; null/[] when the notice doesn't state it. */
+  eligibility?: string | null
+  requiredDocuments?: string[]
 }
 
 export interface CreditRequirement {

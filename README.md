@@ -431,9 +431,7 @@ cd frontend && npx tsc -b && npx eslint . && npm run build
 
 ## 5. 소개 및 시연 영상 · Demo Video
 
-> 🎥 **TODO** — 프로젝트 소개 동영상을 교육원 메일(swedu@pusan.ac.kr)로 제출한 뒤, 센터에서 부여받은 YouTube URL을 여기에 추가하세요.
->
-> `[![Hey! PNU Demo](thumbnail.png)](https://youtu.be/XXXXXXXX)`
+🎥 [Hey! PNU 앱 소개 및 시연 영상 보기 · Watch the App Presentation Video](https://youtu.be/GU-sozioVGI)
 
 ---
 
