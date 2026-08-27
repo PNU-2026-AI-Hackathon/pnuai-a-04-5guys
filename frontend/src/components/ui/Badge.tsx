@@ -10,6 +10,7 @@ const styles: Partial<Record<CourseType, string>> & Record<string, string> = {
   '효원균형교양': 'bg-emerald-50 text-emerald-700 border-emerald-200',
   '효원창의교양': 'bg-emerald-50 text-emerald-700 border-emerald-200',
   '교직과목': 'bg-amber-50 text-amber-700 border-amber-200',
+  '타전공': 'bg-rose-50 text-rose-700 border-rose-200',
 }
 
 const labels: Partial<Record<CourseType, string>> & Record<string, string> = {
@@ -22,6 +23,7 @@ const labels: Partial<Record<CourseType, string>> & Record<string, string> = {
   '효원균형교양': '효원균형교양',
   '효원창의교양': '효원창의교양',
   '교직과목': '교직과목',
+  '타전공': '타전공',
 }
 
 const majorSpecificTypes = new Set<string>([
@@ -37,11 +39,29 @@ const majorSpecificTypes = new Set<string>([
 export function CourseTypeBadge({
   type,
   isInStudentMajor,
+  showOriginalTypeForOtherMajor = false,
 }: {
   type: CourseType
   isInStudentMajor?: boolean | null
+  showOriginalTypeForOtherMajor?: boolean
 }) {
-  const visibleType = isInStudentMajor === false && majorSpecificTypes.has(String(type))
+  const isOtherMajor = isInStudentMajor === false && majorSpecificTypes.has(String(type))
+  if (isOtherMajor && showOriginalTypeForOtherMajor) {
+    return (
+      <span className="inline-flex flex-wrap items-center gap-1">
+        <span className="inline-flex rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-700">
+          {labels['타전공']}
+        </span>
+        <span className={[
+          'inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold',
+          styles[String(type)] || 'bg-gray-50 text-gray-700 border-gray-200',
+        ].join(' ')}>
+          {labels[String(type)] || type}
+        </span>
+      </span>
+    )
+  }
+  const visibleType = isOtherMajor
     ? '타전공'
     : type
   return (

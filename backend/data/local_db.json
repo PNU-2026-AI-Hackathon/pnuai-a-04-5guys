@@ -284,8 +284,8 @@
       "name": "College of Engineering Joint Lab",
       "name_ko": "공과대학 공동실험관",
       "type": "Academic",
-      "latitude": 35.220726,
-      "longitude": 129.094575
+      "latitude": 35.232968,
+      "longitude": 129.084072
     },
     {
       "facility_id": 9,
@@ -454,8 +454,8 @@
       "name": "Physics Building 1",
       "name_ko": "제1물리관",
       "type": "Academic",
-      "latitude": 35.225651,
-      "longitude": 129.092725
+      "latitude": 35.233743,
+      "longitude": 129.081622
     },
     {
       "facility_id": 26,
@@ -464,8 +464,8 @@
       "name": "Physics Building 2",
       "name_ko": "제2물리관",
       "type": "Academic",
-      "latitude": 35.232276,
-      "longitude": 129.080193
+      "latitude": 35.233858,
+      "longitude": 129.081274
     },
     {
       "facility_id": 27,
@@ -524,8 +524,8 @@
       "name": "Jayu Hall Dormitory Building A",
       "name_ko": "자유관 A동",
       "type": "Dormitory",
-      "latitude": 35.235799,
-      "longitude": 129.082362
+      "latitude": 35.235684,
+      "longitude": 129.082393
     },
     {
       "facility_id": 33,
@@ -534,8 +534,8 @@
       "name": "Jayu Hall Dormitory Building B",
       "name_ko": "자유관 B동",
       "type": "Dormitory",
-      "latitude": 35.235799,
-      "longitude": 129.082362
+      "latitude": 35.236014,
+      "longitude": 129.082431
     },
     {
       "facility_id": 34,
@@ -634,8 +634,8 @@
       "name": "Ship Impact & Fatigue Test Lab",
       "name_ko": "선박충격ㆍ피로ㆍ도장시험연구동",
       "type": "Research",
-      "latitude": 35.227874,
-      "longitude": 129.081605
+      "latitude": 35.233075,
+      "longitude": 129.07985
     },
     {
       "facility_id": 44,
@@ -644,8 +644,8 @@
       "name": "Museum Building A",
       "name_ko": "박물관 A",
       "type": "Student Life",
-      "latitude": 35.221909,
-      "longitude": 129.075689
+      "latitude": 35.233772,
+      "longitude": 129.080379
     },
     {
       "facility_id": 45,
@@ -654,8 +654,8 @@
       "name": "Museum Building B",
       "name_ko": "박물관 B",
       "type": "Student Life",
-      "latitude": 35.221909,
-      "longitude": 129.075689
+      "latitude": 35.233872,
+      "longitude": 129.080155
     },
     {
       "facility_id": 46,
@@ -774,8 +774,8 @@
       "name": "Hyowon Industry-Academia Cooperation Hall",
       "name_ko": "효원산학협동관",
       "type": "Research",
-      "latitude": 35.232696,
-      "longitude": 129.078634
+      "latitude": 35.232721,
+      "longitude": 129.078658
     },
     {
       "facility_id": 58,
@@ -1074,8 +1074,8 @@
       "name": "Ungbi Hall Dormitory Building B",
       "name_ko": "웅비관 B동",
       "type": "Dormitory",
-      "latitude": 35.227067,
-      "longitude": 129.08021
+      "latitude": 35.237195,
+      "longitude": 129.076967
     },
     {
       "facility_id": 88,

@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { useLanguage } from "@/context/LanguageContext";
 import { Sparkles, BookOpen } from "lucide-react";
 import { formatMajorName } from "@/utils/formatMajor";
+import { getCourseLanguageBadgeKey } from "@/utils/courseOfferingDisplay";
 
 export function CourseCard({
   course,
@@ -14,6 +15,7 @@ export function CourseCard({
 }) {
   const { t } = useLanguage();
   const showMatch = Number.isFinite(course.score) && course.score > 0;
+  const languageBadgeKey = getCourseLanguageBadgeKey(course);
 
   return (
     <Card className="hover:-translate-y-0.5 hover:shadow-md transition-all active:scale-[0.99] duration-200 border-l-4 border-l-pnu-blue">
@@ -26,7 +28,12 @@ export function CourseCard({
                 {course.score}% Match
               </span>
             ) : null}
-            <CourseTypeBadge type={course.type} isInStudentMajor={course.isInStudentMajor} />
+            <CourseTypeBadge type={course.type} isInStudentMajor={course.isInStudentMajor} showOriginalTypeForOtherMajor />
+            {languageBadgeKey ? (
+              <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700">
+                {t(languageBadgeKey)}
+              </span>
+            ) : null}
             {course.officialCourseNumber ? (
               <span className="rounded-md bg-pnu-surface px-1.5 py-0.5 text-[10px] font-bold text-pnu-muted">
                 {course.officialCourseNumber}

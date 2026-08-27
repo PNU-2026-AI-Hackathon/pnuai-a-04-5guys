@@ -94,7 +94,7 @@ function toEngineProgram(row) {
   };
 }
 
-async function fetchOpenCatalogPrograms({ fetchLimit = 100 } = {}) {
+async function fetchCatalogPrograms({ fetchLimit = 500 } = {}) {
   const { data, error } = await supabase
     .from('extracurricular_program')
     .select('*')
@@ -102,7 +102,7 @@ async function fetchOpenCatalogPrograms({ fetchLimit = 100 } = {}) {
     .limit(fetchLimit);
 
   if (error) throw error;
-  return (data || []).filter((row) => isOpenForApplication(row));
+  return data || [];
 }
 
 async function fetchRecommendedPrograms({
@@ -130,7 +130,7 @@ async function fetchProgramDetail({
   programId,
   studentProfile = {},
   userTags = [],
-  limit = 50,
+  limit = 500,
   language = 'en',
 } = {}) {
   const mapped = await rankPrograms({ studentProfile, userTags, limit });
@@ -156,22 +156,21 @@ async function rankPrograms({ studentProfile = {}, userTags = [], limit = 20 } =
 
   let openRows = [];
   try {
-    const { data, error } = await supabase.rpc('recommended_programs', {
-      user_tags: tags,
-      result_limit: Math.max(limit * 3, 30),
-    });
-    if (!error && Array.isArray(data) && data.length > 0) {
-      openRows = data.filter((row) => isOpenForApplication(row));
-    }
+    openRows = await fetchCatalogPrograms();
   } catch (err) {
-    // Ignore RPC error and fall back to table query
+    console.error('[extracurricular] Failed to fetch programs from catalog table:', err.message);
   }
 
   if (!openRows.length) {
     try {
-      openRows = await fetchOpenCatalogPrograms();
+      const { data, error } = await supabase.rpc('recommended_programs', {
+        user_tags: tags,
+        result_limit: Math.max(limit, 100),
+      });
+      if (!error && Array.isArray(data)) {
+        openRows = data.filter((row) => isOpenForApplication(row));
+      }
     } catch (err) {
-      console.error('[extracurricular] Failed to fetch programs from catalog table:', err.message);
       openRows = [];
     }
   }
@@ -179,16 +178,19 @@ async function rankPrograms({ studentProfile = {}, userTags = [], limit = 20 } =
   if (!openRows.length) return [];
 
   const catalog = openRows.map(toEngineProgram);
-  const ranked = recommendPrograms(profile, catalog, { limit });
-
-  const picked =
-    ranked.length > 0
-      ? ranked
-      : catalog.slice(0, limit).map((program) => ({
-          ...program,
-          score: 0,
-          matchHint: '',
-        }));
+  const openCatalog = catalog.filter((program) => isOpenForApplication(program._row));
+  const ranked = recommendPrograms(profile, openCatalog, { limit: openCatalog.length });
+  const rankedById = new Map(ranked.map((program) => [String(program.id), program]));
+  const picked = catalog
+    .map((program) => rankedById.get(String(program.id)) || {
+      ...program,
+      score: 0,
+      matchHint: '',
+    })
+    .sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0)
+      || String(a.date || '').localeCompare(String(b.date || ''))
+      || String(a.title || '').localeCompare(String(b.title || '')))
+    .slice(0, limit);
 
   return picked.map((program) => {
     const row =
@@ -202,13 +204,13 @@ async function rankPrograms({ studentProfile = {}, userTags = [], limit = 20 } =
 }
 
 /**
- * Pre-translates the open program catalog in the background so the first
+ * Pre-translates the full program catalog in the background so the first
  * Programs / dashboard request is served from the cache (memory + Supabase)
  * instead of blocking on the AI provider. Off the request path — never throws.
  */
 async function warmProgramTranslations({ languages = ['en'] } = {}) {
   try {
-    const openRows = await fetchOpenCatalogPrograms();
+    const openRows = await fetchCatalogPrograms();
     if (!openRows.length) return;
 
     const mapped = openRows.map((row) => mapProgramRow(row));
@@ -242,6 +244,7 @@ function startProgramTranslationWarmSchedule(delayMs = 2000) {
 
 module.exports = {
   collectUserTags,
+  rankPrograms,
   fetchRecommendedPrograms,
   fetchProgramDetail,
   warmProgramTranslations,

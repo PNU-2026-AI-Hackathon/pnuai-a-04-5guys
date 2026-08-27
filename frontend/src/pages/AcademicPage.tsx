@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom'
 import { api } from '@/api'
 import type {
   CourseType,
+  CourseLanguageFilter,
+  CourseSortKey,
+  SortDirection,
   CourseCatalogItem,
   GraduationProgress,
   TimetableEntry,
@@ -12,6 +15,8 @@ import { useAuth } from '@/context/AuthContext'
 import { useLanguage } from '@/context/LanguageContext'
 import { CourseCard } from '@/components/courses/CourseCard'
 import { CourseFilters } from '@/components/courses/CourseFilters'
+import { CourseTermSelector } from '@/components/courses/CourseTermSelector'
+import { CourseListControls } from '@/components/courses/CourseListControls'
 import { GraduationCard } from '@/components/graduation/GraduationCard'
 import { DateStrip } from '@/components/schedule/DateStrip'
 import { DayClassList } from '@/components/schedule/DayClassList'
@@ -41,7 +46,7 @@ import {
   slotsOverlap,
   toTimetableDay,
 } from '@/utils/timetable'
-import { enrollmentSemester } from '@/utils/courseTerm'
+import { currentCourseTerm, enrollmentSemester, type CourseTerm } from '@/utils/courseTerm'
 
 const CARD_SHADOW = '0 10px 28px rgba(15,23,42,0.06)'
 
@@ -50,6 +55,9 @@ export function AcademicPage() {
   const { locale, t } = useLanguage()
   const [viewTab, setViewTab] = useState<'CURRICULUM' | 'TIMETABLE'>('TIMETABLE')
   const [allFilter, setAllFilter] = useState<CourseType | 'ALL'>('ALL')
+  const [catalogLanguage, setCatalogLanguage] = useState<CourseLanguageFilter>('ALL')
+  const [catalogSort, setCatalogSort] = useState<Exclude<CourseSortKey, 'RELEVANCE'>>('NAME')
+  const [catalogDirection, setCatalogDirection] = useState<SortDirection>('ASC')
   const [allCourses, setAllCourses] = useState<CourseCatalogItem[]>([])
   const [progress, setProgress] = useState<GraduationProgress | null>(null)
   const [enrollments, setEnrollments] = useState<TimetableEntry[]>([])
@@ -62,14 +70,15 @@ export function AcademicPage() {
   const [now] = useState(() => new Date())
   const [anchorDate, setAnchorDate] = useState(() => new Date())
   const [monthView, setMonthView] = useState(false)
-  const [scheduleLayout, setScheduleLayout] = useState<'DAILY' | 'GRID'>('DAILY')
+  const [scheduleLayout, setScheduleLayout] = useState<'DAILY' | 'GRID'>('GRID')
+  const [term, setTerm] = useState<CourseTerm>(() => currentCourseTerm())
   const [search, setSearch] = useState('')
   const [catalogPage, setCatalogPage] = useState(1)
   const [catalogTotal, setCatalogTotal] = useState(0)
   const [catalogHasMore, setCatalogHasMore] = useState(false)
   const [selectedCourse, setSelectedCourse] = useState<CourseCatalogItem | null>(null)
-  const academicYear = now.getFullYear()
-  const semester = (now.getMonth() + 1 >= 7 ? '2' : '1') as '1' | '2'
+  const academicYear = term.academicYear
+  const semester = term.semester
 
   const weekDays = useMemo(() => getWeekdayOptions(anchorDate), [anchorDate])
 
@@ -133,7 +142,7 @@ export function AcademicPage() {
   useEffect(() => {
     fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [academicYear, semester, user])
 
   useEffect(() => {
     if (!user) return
@@ -148,6 +157,9 @@ export function AcademicPage() {
           category: allFilter,
           academicYear,
           semester,
+          languageFilter: catalogLanguage,
+          sortBy: catalogSort,
+          sortDirection: catalogDirection,
         })
         setAllCourses(result.items)
         setCatalogPage(result.page)
@@ -160,7 +172,7 @@ export function AcademicPage() {
       }
     }, 250)
     return () => window.clearTimeout(timer)
-  }, [user, search, allFilter, academicYear, semester, t])
+  }, [user, search, allFilter, academicYear, semester, catalogDirection, catalogLanguage, catalogSort, t])
 
   const selectedDate = useMemo(() => {
     const d = new Date(anchorDate)
@@ -274,6 +286,9 @@ export function AcademicPage() {
         category: allFilter,
         academicYear,
         semester,
+        languageFilter: catalogLanguage,
+        sortBy: catalogSort,
+        sortDirection: catalogDirection,
       })
       setAllCourses((current) => [...current, ...result.items])
       setCatalogPage(result.page)
@@ -351,6 +366,12 @@ export function AcademicPage() {
       <div className="space-y-4 px-4 py-4">
         {viewTab === 'TIMETABLE' ? (
           <div className="space-y-2">
+          <div className="rounded-xl bg-white p-3 ring-1 ring-black/5">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.08em] text-pnu-muted">
+              {t('schedule.scheduleTerm')}
+            </p>
+            <CourseTermSelector value={term} onChange={setTerm} />
+          </div>
           <div className="grid grid-cols-2 rounded-xl bg-white p-1 ring-1 ring-black/5">
             <button
               type="button"
@@ -454,6 +475,16 @@ export function AcademicPage() {
                 />
               </label>
               <CourseFilters value={allFilter} onChange={setAllFilter} />
+              <div className="rounded-2xl border border-pnu-border bg-white p-3 shadow-sm">
+                <CourseListControls
+                  language={catalogLanguage}
+                  sortBy={catalogSort}
+                  direction={catalogDirection}
+                  onLanguageChange={setCatalogLanguage}
+                  onSortChange={(value) => setCatalogSort(value === 'RELEVANCE' ? 'NAME' : value)}
+                  onDirectionChange={setCatalogDirection}
+                />
+              </div>
 
               {allCourses.length === 0 ? (
                 <p className="py-4 text-sm text-pnu-muted">{t('academic.noCourses')}</p>
@@ -569,11 +600,19 @@ export function AcademicPage() {
         ) : null}
 
         {!loading && viewTab === 'TIMETABLE' && scheduleLayout === 'GRID' ? (
-          <WeeklyTimetableGrid
-            entries={enrollments}
-            locale={locale}
-            onDrop={handleDropFromTimetable}
-          />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between rounded-xl border border-pnu-border bg-white px-3 py-2.5">
+              <div>
+                <p className="text-[10px] font-semibold text-pnu-muted">{t('schedule.semesterTimetable')}</p>
+                <p className="text-sm font-bold text-pnu-text">{enrollmentSemester(term)}</p>
+              </div>
+            </div>
+            <WeeklyTimetableGrid
+              entries={enrollments}
+              locale={locale}
+              onDrop={handleDropFromTimetable}
+            />
+          </div>
         ) : null}
       </div>
       {selectedCourse ? (

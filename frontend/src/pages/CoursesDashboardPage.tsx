@@ -1,20 +1,32 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, BookOpen, CalendarDays, Check, ChevronRight, Pencil, Plus, Search, Sparkles, Trash2 } from 'lucide-react'
+import { ArrowLeft, BookOpen, CalendarDays, Check, ChevronRight, Pencil, Plus, RotateCcw, Search, SlidersHorizontal, Sparkles, Trash2 } from 'lucide-react'
 import { api } from '@/api'
 import { AddPastCourseModal } from '@/components/courses/AddPastCourseModal'
 import { EditPastCourseModal } from '@/components/courses/EditPastCourseModal'
 import { CourseTermSelector } from '@/components/courses/CourseTermSelector'
+import { CourseListControls } from '@/components/courses/CourseListControls'
 import { AddTimetableModal } from '@/components/schedule/AddTimetableModal'
 import { useAuth } from '@/context/AuthContext'
 import { useLanguage } from '@/context/LanguageContext'
-import type { CourseCatalogItem, CourseType, CreateTimetableEntryInput, Enrollment } from '@/types/api'
+import type { CourseCatalogItem, CourseLanguageFilter, CourseSortKey, CourseType, CreateTimetableEntryInput, Enrollment, MajorData, SortDirection } from '@/types/api'
 import { currentCourseTerm, enrollmentSemester, type CourseTerm } from '@/utils/courseTerm'
 import { formatMajorName } from '@/utils/formatMajor'
+import { getCourseLanguageBadgeKey } from '@/utils/courseOfferingDisplay'
 import { CourseTypeBadge } from '@/components/ui/Badge'
 
 type CoursesTab = 'current' | 'all' | 'past'
 const CARD_SHADOW = '0 8px 24px rgba(15,23,42,0.06)'
+
+interface AppliedCatalogFilters {
+  query: string
+  category: CourseType | 'ALL'
+  recommendedYear?: number
+  majorId: string
+  languageFilter: CourseLanguageFilter
+  sortBy: Exclude<CourseSortKey, 'RELEVANCE'>
+  sortDirection: SortDirection
+}
 
 function isCompletedStatus(status: string) {
   const normalized = String(status || '').toLowerCase()
@@ -30,6 +42,19 @@ function termRank(value: string) {
 
 function currentTermRank(now = new Date()) {
   return now.getFullYear() * 10 + (now.getMonth() + 1 >= 7 ? 3 : 1)
+}
+
+function recentPastTerms(now = new Date(), yearCount = 10) {
+  const terms = ['Winter', 'Fall', 'Summer', 'Spring'] as const
+  const currentRank = currentTermRank(now)
+  const values: string[] = []
+  for (let year = now.getFullYear(); year > now.getFullYear() - yearCount; year -= 1) {
+    for (const term of terms) {
+      const value = `${year}-${term}`
+      if ((termRank(value) ?? currentRank) < currentRank) values.push(value)
+    }
+  }
+  return values
 }
 
 function isPastEnrollment(enrollment: Enrollment) {
@@ -56,9 +81,24 @@ export function CoursesDashboardPage() {
   const [catalogPage, setCatalogPage] = useState(1)
   const [catalogTotal, setCatalogTotal] = useState(0)
   const [catalogHasMore, setCatalogHasMore] = useState(false)
+  const [majors, setMajors] = useState<MajorData[]>([])
+  const [selectedCollege, setSelectedCollege] = useState('')
+  const [selectedMajorId, setSelectedMajorId] = useState('')
   const [query, setQuery] = useState('')
-  const [catalogCategory, setCatalogCategory] = useState<CourseType | 'ALL'>('ALL')
+  const [catalogCategory, setCatalogCategory] = useState<CourseType | 'ALL'>('전공')
   const [recommendedYear, setRecommendedYear] = useState<number | undefined>()
+  const [languageFilter, setLanguageFilter] = useState<CourseLanguageFilter>('ALL')
+  const [sortBy, setSortBy] = useState<Exclude<CourseSortKey, 'RELEVANCE'>>('NAME')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('ASC')
+  const [appliedCatalogFilters, setAppliedCatalogFilters] = useState<AppliedCatalogFilters>({
+    query: '',
+    category: '전공',
+    recommendedYear: undefined,
+    majorId: '',
+    languageFilter: 'ALL',
+    sortBy: 'NAME',
+    sortDirection: 'ASC',
+  })
   // Defaults to the student's own major. Opening the catalogue on "All majors"
   // meant the first thing a student saw was 1,924 courses from 116 majors, and
   // the toggle that fixes it looks like a filter you would apply, not one you
@@ -68,9 +108,13 @@ export function CoursesDashboardPage() {
   const [catalogLoading, setCatalogLoading] = useState(false)
   const [showAddPast, setShowAddPast] = useState(false)
   const [editingPast, setEditingPast] = useState<Enrollment | null>(null)
+  const [pastQuery, setPastQuery] = useState('')
+  const [pastTerm, setPastTerm] = useState('ALL')
+  const [pastGradeFilter, setPastGradeFilter] = useState<'ALL' | 'GRADED' | 'PENDING'>('ALL')
   const [selectedCourse, setSelectedCourse] = useState<CourseCatalogItem | null>(null)
   const [timetableCourseIds, setTimetableCourseIds] = useState<Set<number>>(new Set())
   const [term, setTerm] = useState<CourseTerm>(() => currentCourseTerm())
+  const [draftTerm, setDraftTerm] = useState<CourseTerm>(() => currentCourseTerm())
   const [changingCourseId, setChangingCourseId] = useState<number | null>(null)
   const [error, setError] = useState('')
   const academicYear = term.academicYear
@@ -92,6 +136,29 @@ export function CoursesDashboardPage() {
   useEffect(() => { loadEnrollments() }, [loadEnrollments])
 
   useEffect(() => {
+    let cancelled = false
+    api.getMajors()
+      .then(({ data }) => {
+        if (cancelled) return
+        const availableMajors = data || []
+        setMajors(availableMajors)
+        const normalizedUserMajor = String(user?.major || '').trim().toLowerCase()
+        const studentMajor = availableMajors.find((major) =>
+          major.major_name.trim().toLowerCase() === normalizedUserMajor)
+        if (studentMajor) {
+          setSelectedCollege(studentMajor.department)
+          setSelectedMajorId(String(studentMajor.major_id))
+          setAppliedCatalogFilters((current) => ({
+            ...current,
+            majorId: String(studentMajor.major_id),
+          }))
+        }
+      })
+      .catch((reason) => setError(reason instanceof Error ? reason.message : t('academic.loadError')))
+    return () => { cancelled = true }
+  }, [t, user?.major])
+
+  useEffect(() => {
     api.getTimetable({ academicYear, semester })
       .then((entries) => setTimetableCourseIds(new Set(entries.map((entry) => Number(entry.course_id)))))
       .catch((reason) => setError(reason instanceof Error ? reason.message : t('academic.loadError')))
@@ -107,10 +174,14 @@ export function CoursesDashboardPage() {
         const page = await api.getCourseCatalog({
           page: 1,
           pageSize: 100,
-          search: query,
-          category: catalogCategory,
-          recommendedYear,
-          myMajor: catalogCategory === '전공',
+          search: appliedCatalogFilters.query,
+          category: appliedCatalogFilters.category,
+          recommendedYear: appliedCatalogFilters.recommendedYear,
+          myMajor: !appliedCatalogFilters.majorId,
+          majorId: appliedCatalogFilters.majorId ? Number(appliedCatalogFilters.majorId) : undefined,
+          languageFilter: appliedCatalogFilters.languageFilter,
+          sortBy: appliedCatalogFilters.sortBy,
+          sortDirection: appliedCatalogFilters.sortDirection,
           academicYear,
           semester,
 
@@ -131,11 +202,21 @@ export function CoursesDashboardPage() {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [academicYear, catalogCategory, query, recommendedYear, semester, t, tab])
+  }, [academicYear, appliedCatalogFilters, semester, t, tab])
 
   const pastEnrollments = useMemo(() => enrollments.filter(isPastEnrollment), [enrollments])
   const activeEnrollments = useMemo(() => enrollments.filter((item) => !isPastEnrollment(item)), [enrollments])
   const semesterCredits = activeEnrollments.reduce((sum, item) => sum + (item.credit ?? 0), 0)
+  const colleges = useMemo(() => Array.from(new Set(
+    majors.map((major) => major.department).filter(Boolean),
+  )).sort((a, b) => a.localeCompare(b)), [majors])
+  const majorsForCollege = useMemo(() => majors
+    .filter((major) => major.department === selectedCollege)
+    .sort((a, b) => a.major_name.localeCompare(b.major_name)), [majors, selectedCollege])
+  const studentMajor = useMemo(() => {
+    const normalizedUserMajor = String(user?.major || '').trim().toLowerCase()
+    return majors.find((major) => major.major_name.trim().toLowerCase() === normalizedUserMajor) || null
+  }, [majors, user?.major])
 
   const currentCourseIds = useMemo(() => {
     const ids = new Set<number>(timetableCourseIds)
@@ -153,10 +234,14 @@ export function CoursesDashboardPage() {
       const page = await api.getCourseCatalog({
         page: nextPage,
         pageSize: 100,
-        search: query,
-        category: catalogCategory,
-        recommendedYear,
-        myMajor: catalogCategory === '전공',
+        search: appliedCatalogFilters.query,
+        category: appliedCatalogFilters.category,
+        recommendedYear: appliedCatalogFilters.recommendedYear,
+        myMajor: !appliedCatalogFilters.majorId,
+        majorId: appliedCatalogFilters.majorId ? Number(appliedCatalogFilters.majorId) : undefined,
+        languageFilter: appliedCatalogFilters.languageFilter,
+        sortBy: appliedCatalogFilters.sortBy,
+        sortDirection: appliedCatalogFilters.sortDirection,
         academicYear,
         semester,
 
@@ -169,6 +254,65 @@ export function CoursesDashboardPage() {
     } finally {
       setCatalogLoading(false)
     }
+  }
+
+  function selectCollege(college: string) {
+    setSelectedCollege(college)
+    const firstMajor = majors
+      .filter((major) => major.department === college)
+      .sort((a, b) => a.major_name.localeCompare(b.major_name))[0]
+    setSelectedMajorId(firstMajor ? String(firstMajor.major_id) : '')
+  }
+
+  function resetCatalogFilters() {
+    const resetTerm = currentCourseTerm()
+    setQuery('')
+    setCatalogCategory('전공')
+    setRecommendedYear(undefined)
+    setLanguageFilter('ALL')
+    setSortBy('NAME')
+    setSortDirection('ASC')
+    setDraftTerm(resetTerm)
+    setTerm(resetTerm)
+    if (studentMajor) {
+      setSelectedCollege(studentMajor.department)
+      setSelectedMajorId(String(studentMajor.major_id))
+      setAppliedCatalogFilters({
+        query: '',
+        category: '전공',
+        recommendedYear: undefined,
+        majorId: String(studentMajor.major_id),
+        languageFilter: 'ALL',
+        sortBy: 'NAME',
+        sortDirection: 'ASC',
+      })
+    } else {
+      setSelectedCollege('')
+      setSelectedMajorId('')
+      setAppliedCatalogFilters({
+        query: '',
+        category: '전공',
+        recommendedYear: undefined,
+        majorId: '',
+        languageFilter: 'ALL',
+        sortBy: 'NAME',
+        sortDirection: 'ASC',
+      })
+    }
+  }
+
+  function searchCatalog(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setTerm(draftTerm)
+    setAppliedCatalogFilters({
+      query: query.trim(),
+      category: catalogCategory,
+      recommendedYear,
+      majorId: selectedMajorId,
+      languageFilter,
+      sortBy,
+      sortDirection,
+    })
   }
 
   async function addCurrentCourse(data: CreateTimetableEntryInput) {
@@ -241,7 +385,33 @@ export function CoursesDashboardPage() {
     { id: 'all', labelKey: 'courses.tabAll' },
     { id: 'past', labelKey: 'courses.tabPast' },
   ]
-  const visibleEnrollments = tab === 'past' ? pastEnrollments : activeEnrollments
+  const pastTerms = Array.from(new Set([
+    ...pastEnrollments.map((item) => item.semester),
+    ...recentPastTerms(),
+  ]))
+    .sort((a, b) => (termRank(b) ?? 0) - (termRank(a) ?? 0))
+  const filteredPastEnrollments = pastEnrollments
+    .filter((item) => {
+      if (pastTerm !== 'ALL' && item.semester !== pastTerm) return false
+      if (pastGradeFilter === 'GRADED' && !item.final_grade) return false
+      if (pastGradeFilter === 'PENDING' && item.final_grade) return false
+      const needle = pastQuery.trim().toLowerCase()
+      if (!needle) return true
+      return [
+        item.course_name,
+        item.course_name_en,
+        item.course_name_ko,
+        item.official_course_number,
+        item.semester,
+        item.final_grade,
+      ].some((value) => String(value || '').toLowerCase().includes(needle))
+    })
+    .sort((a, b) => {
+      const termComparison = (termRank(b.semester) ?? 0) - (termRank(a.semester) ?? 0)
+      if (termComparison) return termComparison
+      return String(a.course_name_en || a.course_name || '').localeCompare(String(b.course_name_en || b.course_name || ''))
+    })
+  const visibleEnrollments = tab === 'past' ? filteredPastEnrollments : activeEnrollments
 
   return (
     <div className="min-h-full bg-[#F5F7FB]">
@@ -275,19 +445,72 @@ export function CoursesDashboardPage() {
           ))}
         </div>
 
-        {tab === 'all' ? <CourseTermSelector value={term} onChange={setTerm} /> : null}
-
         {tab === 'all' ? (
           <>
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-pnu-muted" />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('courseCatalog.searchPlaceholder')} className="w-full rounded-xl border border-pnu-border bg-white py-2 pl-9 pr-3 text-sm" />
-            </div>
-              <div className="grid grid-cols-2 gap-2">
+            <form onSubmit={searchCatalog} className="overflow-hidden rounded-[18px] border border-[#DDE4EE] bg-white" style={{ boxShadow: CARD_SHADOW }}>
+              <div className="flex items-start justify-between gap-3 border-b border-[#E7ECF3] bg-gradient-to-r from-[#F4F8FF] to-white px-4 py-3">
+                <div className="flex min-w-0 items-start gap-2.5">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-pnu-blue text-white">
+                    <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="text-[13px] font-bold text-pnu-text">{t('courseCatalog.filtersTitle')}</h2>
+                    <p className="mt-0.5 text-[10px] leading-relaxed text-pnu-muted">{t('courseCatalog.filtersHint')}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={resetCatalogFilters}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#D8E0EB] bg-white px-2 py-1.5 text-[10px] font-bold text-pnu-blue transition hover:bg-[#F4F8FF]"
+                >
+                  <RotateCcw className="h-3 w-3" aria-hidden="true" />
+                  {t('courseCatalog.resetFilters')}
+                </button>
+              </div>
+
+              <div className="space-y-3 p-3">
+                <div>
+                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.08em] text-pnu-muted">
+                    {t('courseCatalog.termSelector')}
+                  </label>
+                  <CourseTermSelector value={draftTerm} onChange={setDraftTerm} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="min-w-0">
+                    <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.08em] text-pnu-muted">{t('profile.college')}</span>
+                    <select
+                      value={selectedCollege}
+                      onChange={(event) => selectCollege(event.target.value)}
+                      className="w-full rounded-xl border border-pnu-border bg-[#FAFBFD] px-3 py-2.5 text-xs text-pnu-text outline-none transition focus:border-pnu-blue-light focus:ring-2 focus:ring-pnu-blue-light/20"
+                    >
+                      <option value="">{t('courseCatalog.selectCollege')}</option>
+                      {colleges.map((college) => <option key={college} value={college}>{college}</option>)}
+                    </select>
+                  </label>
+                  <label className="min-w-0">
+                    <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.08em] text-pnu-muted">{t('profile.major')}</span>
+                    <select
+                      value={selectedMajorId}
+                      onChange={(event) => setSelectedMajorId(event.target.value)}
+                      disabled={!selectedCollege}
+                      className="w-full rounded-xl border border-pnu-border bg-[#FAFBFD] px-3 py-2.5 text-xs text-pnu-text outline-none transition focus:border-pnu-blue-light focus:ring-2 focus:ring-pnu-blue-light/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="">{t('courseCatalog.selectMajor')}</option>
+                      {majorsForCollege.map((major) => (
+                        <option key={major.major_id} value={major.major_id}>{major.major_name}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="min-w-0">
+                    <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.08em] text-pnu-muted">{t('courseCatalog.categoryFilter')}</span>
                 <select
                   value={catalogCategory}
                   onChange={(event) => setCatalogCategory(event.target.value as CourseType | 'ALL')}
-                  className="rounded-xl border border-pnu-border bg-white px-3 py-2 text-xs text-pnu-text"
+                        className="w-full rounded-xl border border-pnu-border bg-[#FAFBFD] px-3 py-2.5 text-xs text-pnu-text outline-none transition focus:border-pnu-blue-light focus:ring-2 focus:ring-pnu-blue-light/20"
                   aria-label={t('courseCatalog.categoryFilter')}
                 >
                   <option value="ALL">{t('courseFilter.all')}</option>
@@ -297,30 +520,81 @@ export function CoursesDashboardPage() {
                   <option value="효원창의교양">{t('courseFilter.hyowonCreative')}</option>
                   <option value="일반선택">{t('courseFilter.generalElective')}</option>
                 </select>
-              <select
-                value={recommendedYear ?? ''}
-                onChange={(event) => setRecommendedYear(event.target.value ? Number(event.target.value) : undefined)}
-                className="rounded-xl border border-pnu-border bg-white px-3 py-2 text-xs text-pnu-text"
-                aria-label={t('courseCatalog.yearFilter')}
-              >
-                <option value="">{t('courseCatalog.allYears')}</option>
-                {[1, 2, 3, 4].map((year) => <option key={year} value={year}>{t('courseCatalog.yearOption', { year })}</option>)}
-              </select>
+                  </label>
+                  <label className="min-w-0">
+                    <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.08em] text-pnu-muted">{t('courseCatalog.yearFilter')}</span>
+                    <select
+                      value={recommendedYear ?? ''}
+                      onChange={(event) => setRecommendedYear(event.target.value ? Number(event.target.value) : undefined)}
+                      className="w-full rounded-xl border border-pnu-border bg-[#FAFBFD] px-3 py-2.5 text-xs text-pnu-text outline-none transition focus:border-pnu-blue-light focus:ring-2 focus:ring-pnu-blue-light/20"
+                      aria-label={t('courseCatalog.yearFilter')}
+                    >
+                      <option value="">{t('courseCatalog.allYears')}</option>
+                      {[1, 2, 3, 4].map((year) => <option key={year} value={year}>{t('courseCatalog.yearOption', { year })}</option>)}
+                    </select>
+                  </label>
+                </div>
+
+                <CourseListControls
+                  language={languageFilter}
+                  sortBy={sortBy}
+                  direction={sortDirection}
+                  onLanguageChange={setLanguageFilter}
+                  onSortChange={(value) => setSortBy(value === 'RELEVANCE' ? 'NAME' : value)}
+                  onDirectionChange={setSortDirection}
+                />
+
+                <label className="block">
+                  <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.08em] text-pnu-muted">{t('courseCatalog.courseName')}</span>
+                  <span className="relative block">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-pnu-muted" aria-hidden="true" />
+                    <input
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder={t('courseCatalog.searchPlaceholder')}
+                      className="w-full rounded-xl border border-pnu-border bg-[#FAFBFD] py-2.5 pl-9 pr-3 text-sm text-pnu-text outline-none transition placeholder:text-pnu-muted/70 focus:border-pnu-blue-light focus:ring-2 focus:ring-pnu-blue-light/20"
+                    />
+                  </span>
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={catalogLoading || !selectedMajorId}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-pnu-blue px-4 py-3 text-sm font-bold text-white shadow-[0_8px_18px_rgba(0,61,130,0.2)] transition hover:bg-pnu-blue-light active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Search className="h-4 w-4" aria-hidden="true" />
+                  {catalogLoading ? t('common.loading') : t('courseCatalog.searchAction')}
+                </button>
               </div>
-              <p className="text-[11px] font-semibold text-pnu-muted">{catalogTotal.toLocaleString()} {t('courses.coursesUnit')}</p>
+            </form>
+
+            <div className="flex items-center justify-between px-0.5">
+              <p className="text-[11px] font-semibold text-pnu-muted">{t('courseCatalog.results', { count: catalogTotal.toLocaleString() })}</p>
+              {studentMajor && selectedMajorId === String(studentMajor.major_id) ? (
+                <span className="rounded-full bg-[#E8F3FF] px-2.5 py-1 text-[10px] font-bold text-pnu-blue">{t('courseCatalog.myMajor')}</span>
+              ) : null}
+            </div>
             <section className="overflow-hidden rounded-[14px] bg-white" style={{ boxShadow: CARD_SHADOW }}>
               {catalogLoading && catalog.length === 0 ? <p className="p-8 text-center text-xs text-pnu-muted">{t('common.loading')}</p> : null}
               <ul className="divide-y divide-black/6">
                 {catalog.map((course) => {
                   const courseId = Number(course.id)
                   const isAdded = currentCourseIds.has(courseId)
+                  const languageBadgeKey = getCourseLanguageBadgeKey(course)
                   return (
                   <li key={course.id} className="flex items-center gap-2 pr-3">
                     <Link to={`/academic/recommended-courses/${course.id}?academicYear=${academicYear}&semester=${semester}`} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3">
                       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E8F3FF] text-pnu-blue"><BookOpen className="h-4 w-4" /></span>
                       <span className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                          <CourseTypeBadge type={course.type} isInStudentMajor={course.isInStudentMajor} />
+                          <CourseTypeBadge
+                            type={course.type}
+                            isInStudentMajor={course.isInStudentMajor}
+                            showOriginalTypeForOtherMajor
+                          />
+                          {languageBadgeKey ? (
+                            <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700">{t(languageBadgeKey)}</span>
+                          ) : null}
                           {course.officialCourseNumber ? <span className="text-[10px] font-bold text-pnu-blue">{course.officialCourseNumber}</span> : null}
                         </div>
                         <span className="block truncate text-[13px] font-bold text-pnu-text">{course.nameEn || course.nameKo}</span>
@@ -373,14 +647,50 @@ export function CoursesDashboardPage() {
           </>
         ) : (
           <>
-            {tab === 'past' ? <button type="button" onClick={() => setShowAddPast(true)} className="flex w-full items-center justify-center gap-2 rounded-xl bg-pnu-blue px-3 py-2.5 text-xs font-bold text-white"><Plus className="h-4 w-4" /> {t('courses.addPastCourse')}</button> : null}
+            {tab === 'past' ? (
+              <div className="space-y-2">
+                <button type="button" onClick={() => setShowAddPast(true)} className="flex w-full items-center justify-center gap-2 rounded-xl bg-pnu-blue px-3 py-2.5 text-xs font-bold text-white"><Plus className="h-4 w-4" /> {t('courses.addPastCourse')}</button>
+                <div className="rounded-[14px] border border-[#DDE4EE] bg-white p-2.5" style={{ boxShadow: CARD_SHADOW }}>
+                  <label className="relative block">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-pnu-muted" />
+                    <input
+                      value={pastQuery}
+                      onChange={(event) => setPastQuery(event.target.value)}
+                      placeholder={t('courses.searchPastPlaceholder')}
+                      className="w-full rounded-xl border border-pnu-border bg-[#FAFBFD] py-2.5 pl-9 pr-3 text-xs outline-none focus:border-pnu-blue"
+                    />
+                  </label>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <select value={pastTerm} onChange={(event) => setPastTerm(event.target.value)} className="min-w-0 rounded-xl border border-pnu-border bg-[#FAFBFD] px-2.5 py-2 text-xs">
+                      <option value="ALL">{t('courses.allPastTerms')}</option>
+                      {pastTerms.map((item) => <option key={item} value={item}>{item}</option>)}
+                    </select>
+                    <select value={pastGradeFilter} onChange={(event) => setPastGradeFilter(event.target.value as 'ALL' | 'GRADED' | 'PENDING')} className="min-w-0 rounded-xl border border-pnu-border bg-[#FAFBFD] px-2.5 py-2 text-xs">
+                      <option value="ALL">{t('courses.allGradeStatuses')}</option>
+                      <option value="GRADED">{t('courses.gradesRecorded')}</option>
+                      <option value="PENDING">{t('courses.gradePending')}</option>
+                    </select>
+                  </div>
+                  <p className="mt-2 px-0.5 text-[10px] font-semibold text-pnu-muted">
+                    {t('courses.pastResults', { count: filteredPastEnrollments.length })}
+                  </p>
+                  <div className="mt-1 flex items-center gap-2 rounded-lg bg-emerald-50 px-2.5 py-2 text-[10px] leading-relaxed text-emerald-700">
+                    <span className="min-w-0 flex-1">{t('courses.graduationSyncHelp')}</span>
+                    <Link to="/academic/credits" className="shrink-0 font-bold text-pnu-blue hover:underline">
+                      {t('courses.viewGraduationProgress')}
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ) : null}
             <section className="overflow-hidden rounded-[14px] bg-white" style={{ boxShadow: CARD_SHADOW }}>
               {loading ? <p className="p-8 text-center text-xs text-pnu-muted">{t('common.loading')}</p> : null}
               {!loading && visibleEnrollments.length === 0 ? <p className="p-8 text-center text-xs text-pnu-muted">{t('courses.emptyList')}</p> : null}
               <ul className="divide-y divide-black/6">
                 {visibleEnrollments.map((enrollment) => {
                   const hasGrade = Boolean(enrollment.final_grade)
-                  const credits = enrollment.credits_earned ?? enrollment.credit ?? 3
+                  const failingGrade = ['F', 'NP', 'U'].includes(String(enrollment.final_grade || '').toUpperCase())
+                  const credits = enrollment.credits_earned ?? (hasGrade && !failingGrade ? enrollment.credit ?? 0 : 0)
                   return (
                     <li key={enrollment.enrollment_id} className="flex items-center gap-1 pr-2">
                       <Link
@@ -410,7 +720,7 @@ export function CoursesDashboardPage() {
                               ) : (
                                 <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
                                   <span>{t('courses.gradePending') || 'Grade Pending'}</span>
-                                  <span>· {credits} {t('courses.creditsUnit')}</span>
+                                  <span>· {t('courses.notCountedYet')}</span>
                                 </span>
                               )
                             ) : (

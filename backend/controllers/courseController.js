@@ -66,6 +66,9 @@ async function getCourseCatalog(req, res, next) {
       studentMajorIds,
       offeredOnly: String(req.query.offeredOnly || '').toLowerCase() === 'true',
       language: req.language || 'en',
+      languageFilter: req.query.languageFilter,
+      sortBy: req.query.sortBy,
+      sortDirection: req.query.sortDirection,
     });
     res.status(200).json({ success: true, data });
   } catch (error) {

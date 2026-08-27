@@ -110,7 +110,7 @@ router.get("/health-check", healthCheck);
 router.get("/majors", getAllMajors);
 router.get("/scholarships", getAllScholarships);
 router.get("/career-opportunities", getCareerOpportunities);
-router.get("/career-recommendations", getCareerRecommendations);
+router.get("/career-recommendations", authenticateToken, getCareerRecommendations);
 router.get("/community/posts", authenticateToken, getCommunityPostsHandler);
 router.get("/emergency-guide", authenticateToken, getEmergencyGuideHandler);
 router.get("/campus-facilities", getCampusFacilitiesHandler);

@@ -36,7 +36,7 @@ from your `backend/.env`.
 | Variable | Value |
 |---|---|
 | `VITE_API_BASE_URL` | the API URL **plus `/api`** — fill in after step 2 |
-| `VITE_NAVER_MAP_CLIENT_ID` | `backend/.env` (safe to expose; it is domain-locked) |
+| `VITE_NAVER_MAP_CLIENT_ID` | `frontend/.env` (safe to expose; it is domain-locked, **not** in `backend/.env`) |
 
 ---
 

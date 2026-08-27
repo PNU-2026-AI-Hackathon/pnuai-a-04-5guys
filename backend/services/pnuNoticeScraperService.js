@@ -71,6 +71,19 @@ function normalizeWhitespace(value) {
     .trim()
 }
 
+function normalizeDetailText(value) {
+  return String(value || '')
+    .replace(/\u00a0/g, ' ')
+    .replace(/\u200b/g, '')
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((line) => line.replace(/[ \t]+/g, ' ').trim())
+    .filter((line, index, lines) => line || (index > 0 && lines[index - 1]))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 function parseBoardDate(value) {
   const match = normalizeWhitespace(value).match(/^(\d{4})[.-](\d{2})[.-](\d{2})/)
   if (!match) return null
@@ -216,6 +229,35 @@ function parseOneStopHomePage(html, source, { now = new Date() } = {}) {
   return items
 }
 
+function readableElementText($, element) {
+  const content = $(element).clone()
+  content.find('script, style, noscript, iframe, button').remove()
+  content.find('br').replaceWith('\n')
+  content.find('p, li, tr, blockquote, h1, h2, h3, h4').each((_, node) => {
+    $(node).append('\n')
+  })
+  return normalizeDetailText(content.text())
+}
+
+function parseNoticeDetailPage(html, source) {
+  const $ = cheerio.load(html)
+  const selectors = source.kind === 'k2web'
+    ? ['.board-view .txt', '.viewCont .txt', '.artclView .txt', '.txt']
+    : source.kind === 'main-cms'
+      ? ['.board-view-contents', '.board-view-cont']
+      : source.kind === 'onestop-home'
+        ? ['.board-view-cont']
+        : []
+
+  for (const selector of selectors) {
+    const element = $(selector).first()
+    if (!element.length) continue
+    const text = readableElementText($, element)
+    if (text.length >= 20) return text
+  }
+  return null
+}
+
 function decodeDormitoryContent(value) {
   let text = cheerio.load(`<div>${value || ''}</div>`)('div').text()
   if (/<[^>]+>/.test(text)) {
@@ -287,6 +329,7 @@ async function scrapePagedSource(source, {
   sinceMs = Date.now() - ONE_MONTH_MS,
   fetchImpl = fetch,
   now = new Date(),
+  onDetailError,
 } = {}) {
   const byUrl = new Map()
   let reachedOlder = false
@@ -308,7 +351,29 @@ async function scrapePagedSource(source, {
     if (freshOnPage === 0 && (reachedOlder || page > 1)) break
   }
 
-  return [...byUrl.values()]
+  const items = [...byUrl.values()]
+  let nextIndex = 0
+  const workerCount = Math.min(4, items.length)
+  await Promise.all(Array.from({ length: workerCount }, async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex
+      nextIndex += 1
+      const item = items[index]
+      try {
+        const detailHtml = await fetchHtml(item.source_url, { fetchImpl })
+        const detailText = parseNoticeDetailPage(detailHtml, source)
+        if (detailText) item.content = detailText
+      } catch (error) {
+        // Keep the list-page fallback for an individual unavailable detail.
+        // One broken post must not hide the rest of a healthy notice board.
+        if (typeof onDetailError === 'function') {
+          onDetailError(source, item, error)
+        }
+      }
+    }
+  }))
+
+  return items
 }
 
 function base64UrlFromHex(hex) {
@@ -439,6 +504,7 @@ async function scrapeRecentNotices(options = {}) {
         sinceMs,
         fetchImpl: options.fetchImpl,
         now: options.now,
+        onDetailError: options.onDetailError,
       })
       successfulSources += 1
       all.push(...items)
@@ -514,6 +580,7 @@ module.exports = {
   parseDormitoryRows,
   parseK2WebListPage,
   parseMainPnuListPage,
+  parseNoticeDetailPage,
   parseOneStopHomePage,
   scrapeDormitorySource,
   scrapeRecentNotices,

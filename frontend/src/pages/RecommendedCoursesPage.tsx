@@ -1,20 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarPlus, Check, Sparkles, Trash2 } from 'lucide-react'
+import { CalendarPlus, Check, RotateCcw, SlidersHorizontal, Sparkles, Trash2 } from 'lucide-react'
 import { api } from '@/api'
-import type { CourseCatalogItem, CourseType, CreateTimetableEntryInput, RecommendedCourse } from '@/types/api'
+import type { CourseCatalogItem, CourseLanguageFilter, CourseSortKey, CourseType, CreateTimetableEntryInput, RecommendedCourse, SortDirection } from '@/types/api'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { AddTimetableModal } from '@/components/schedule/AddTimetableModal'
 import { useLanguage } from '@/context/LanguageContext'
 import { useToast } from '@/context/ToastContext'
 import { CourseTypeBadge } from '@/components/ui/Badge'
 import { CourseTermSelector } from '@/components/courses/CourseTermSelector'
+import { CourseListControls } from '@/components/courses/CourseListControls'
 import { useAuth } from '@/context/AuthContext'
 import { currentCourseTerm, enrollmentSemester, type CourseTerm } from '@/utils/courseTerm'
 import {
   getVerifiedCourseOfferingDisplay,
 } from '@/utils/courseOfferingDisplay'
 import { formatMajorName } from '@/utils/formatMajor'
+import { filterAndSortCourses } from '@/utils/courseList'
 
 export function RecommendedCoursesPage() {
   const { language, t } = useLanguage()
@@ -27,6 +29,9 @@ export function RecommendedCoursesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [typeFilter, setTypeFilter] = useState<CourseType | 'ALL'>('ALL')
+  const [languageFilter, setLanguageFilter] = useState<CourseLanguageFilter>('ALL')
+  const [sortBy, setSortBy] = useState<CourseSortKey>('RELEVANCE')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('DESC')
   const [term, setTerm] = useState<CourseTerm>(() => currentCourseTerm())
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<number>>(new Set())
 
@@ -119,30 +124,71 @@ export function RecommendedCoursesPage() {
     }
   }
 
-  const recommendedCourses = courses.filter((course) => (
-    course.score > 0
-    && (typeFilter === 'ALL' || course.type === typeFilter)
-  ))
+  const recommendedCourses = useMemo(() => filterAndSortCourses(
+    courses.filter((course) => (
+      course.score > 0
+      && (typeFilter === 'ALL' || course.type === typeFilter)
+    )),
+    languageFilter,
+    sortBy,
+    sortDirection,
+  ), [courses, languageFilter, sortBy, sortDirection, typeFilter])
+
+  function resetFilters() {
+    setTypeFilter('ALL')
+    setLanguageFilter('ALL')
+    setSortBy('RELEVANCE')
+    setSortDirection('DESC')
+    setTerm(currentCourseTerm())
+  }
 
   return (
     <div>
       <PageHeader title={t('academic.recommendedCourses')} subtitle={t('academic.recommendationHint')} back />
 
       <div className="space-y-3 px-5 py-5">
-        <CourseTermSelector value={term} onChange={setTerm} />
-        <div className="grid grid-cols-2 gap-2">
-          <select
-            value={typeFilter}
-            onChange={(event) => setTypeFilter(event.target.value as CourseType | 'ALL')}
-            className="rounded-xl border border-pnu-border bg-white px-3 py-2 text-xs text-pnu-text"
-            aria-label={t('courseCatalog.categoryFilter')}
-          >
-            <option value="ALL">{t('courseFilter.all')}</option>
-            <option value="REQUIRED">{t('courseFilter.required')}</option>
-            <option value="ELECTIVE">{t('courseFilter.elective')}</option>
-            <option value="GEN_ED">{t('courseFilter.genEd')}</option>
-          </select>
-        </div>
+        <section className="overflow-hidden rounded-[18px] border border-[#DDE4EE] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+          <div className="flex items-start justify-between gap-3 border-b border-[#E7ECF3] bg-gradient-to-r from-[#F4F8FF] to-white px-4 py-3">
+            <div className="flex min-w-0 items-start gap-2.5">
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-pnu-blue text-white">
+                <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="text-[13px] font-bold text-pnu-text">{t('courseCatalog.recommendationFiltersTitle')}</h2>
+                <p className="mt-0.5 text-[10px] leading-relaxed text-pnu-muted">{t('courseCatalog.recommendationFiltersHint')}</p>
+              </div>
+            </div>
+            <button type="button" onClick={resetFilters} className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#D8E0EB] bg-white px-2 py-1.5 text-[10px] font-bold text-pnu-blue transition hover:bg-[#F4F8FF]">
+              <RotateCcw className="h-3 w-3" aria-hidden="true" />
+              {t('courseCatalog.resetFilters')}
+            </button>
+          </div>
+          <div className="space-y-3 p-3">
+            <div>
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-pnu-muted">{t('courseCatalog.termSelector')}</p>
+              <CourseTermSelector value={term} onChange={setTerm} />
+            </div>
+            <label className="block">
+              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.08em] text-pnu-muted">{t('courseCatalog.categoryFilter')}</span>
+              <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as CourseType | 'ALL')} className="w-full rounded-xl border border-pnu-border bg-[#FAFBFD] px-3 py-2.5 text-xs text-pnu-text outline-none focus:border-pnu-blue-light focus:ring-2 focus:ring-pnu-blue-light/20">
+                <option value="ALL">{t('courseFilter.all')}</option>
+                <option value="REQUIRED">{t('courseFilter.required')}</option>
+                <option value="ELECTIVE">{t('courseFilter.elective')}</option>
+                <option value="GEN_ED">{t('courseFilter.genEd')}</option>
+              </select>
+            </label>
+            <CourseListControls
+              language={languageFilter}
+              sortBy={sortBy}
+              direction={sortDirection}
+              onLanguageChange={setLanguageFilter}
+              onSortChange={setSortBy}
+              onDirectionChange={setSortDirection}
+              allowRelevance
+              allowCode={false}
+            />
+          </div>
+        </section>
         {error ? (
           <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
         ) : null}

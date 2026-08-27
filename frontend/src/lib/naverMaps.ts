@@ -6,6 +6,8 @@ export interface NaverMap {
   setCenter(latlng: any): void
   setZoom(zoom: number, effect?: boolean): void
   panTo(latlng: any): void
+  getCenter(): { lat(): number; lng(): number }
+  getZoom(): number
 }
 
 export interface NaverMarker {
@@ -53,7 +55,13 @@ export interface NaverMapsApi {
         target: NaverMap | NaverMarker | NaverInfoWindow,
         type: string,
         handler: () => void,
-      ) => void
+      ) => unknown
+      once?: (
+        target: NaverMap | NaverMarker | NaverInfoWindow,
+        type: string,
+        handler: () => void,
+      ) => unknown
+      removeListener?: (listener: unknown) => void
     }
     MapTypeId: {
       NORMAL: any

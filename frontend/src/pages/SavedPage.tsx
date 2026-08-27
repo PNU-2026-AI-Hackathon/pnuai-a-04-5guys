@@ -3,7 +3,7 @@ import { Bookmark, Megaphone } from 'lucide-react'
 import { CareerJobRow } from '@/components/career/CareerJobRow'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { useLanguage } from '@/context/LanguageContext'
-import { isExternalNotice, noticeHref } from '@/utils/notices'
+import { noticeHref } from '@/utils/notices'
 import { useSavedJobs } from '@/utils/savedJobs'
 import { useSavedNotices } from '@/utils/savedNotices'
 
@@ -76,7 +76,6 @@ export function SavedPage() {
                 <ul className="space-y-2">
                   {savedNotices.map((notice) => {
                     const href = noticeHref(notice)
-                    const external = isExternalNotice(notice)
                     const saved = isNoticeSaved(notice.id)
                     const formattedDate = formatDate(notice.date, locale)
                     const content = (
@@ -100,20 +99,9 @@ export function SavedPage() {
                         key={notice.id}
                         className="flex items-start gap-2 rounded-[16px] bg-white px-2.5 py-3 shadow-sm ring-1 ring-black/5"
                       >
-                        {external ? (
-                          <a
-                            href={href}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex min-w-0 flex-1 items-start gap-2.5"
-                          >
-                            {content}
-                          </a>
-                        ) : (
-                          <Link to={href} className="flex min-w-0 flex-1 items-start gap-2.5">
-                            {content}
-                          </Link>
-                        )}
+                        <Link to={href} className="flex min-w-0 flex-1 items-start gap-2.5">
+                          {content}
+                        </Link>
                         <div className="flex shrink-0 flex-col items-end gap-2">
                           {formattedDate ? (
                             <span className="text-[10px] font-medium text-pnu-muted">

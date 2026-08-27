@@ -5,6 +5,7 @@ const {
   parseDormitoryRows,
   parseK2WebListPage,
   parseMainPnuListPage,
+  parseNoticeDetailPage,
   parseOneStopHomePage,
   scrapeRecentNotices,
 } = require('../services/pnuNoticeScraperService');
@@ -77,6 +78,17 @@ describe('real PNU notice source registry', () => {
     });
   });
 
+  test.each([
+    ['international', `<div class="board-view"><div class="txt"><p>First requirement</p><p>Deadline: 2026-09-01</p></div></div>`, 'First requirement'],
+    ['pnu-main', `<div class="board-view-contents"><p>Main notice body</p><p>Bring your student ID.</p></div>`, 'Main notice body'],
+    ['onestop', `<div class="board-view-cont"><p>One-Stop notice body</p><p>Contact your department.</p></div>`, 'One-Stop notice body'],
+  ])('extracts readable full text from %s detail pages', (sourceId, html, expected) => {
+    const text = parseNoticeDetailPage(html, source(sourceId));
+    expect(text).toContain(expected);
+    expect(text).toMatch(/2026-09-01|student ID|department/);
+    expect(text).not.toMatch(/<p>/);
+  });
+
   test('normalizes public dormitory API rows', () => {
     const rows = parseDormitoryRows([{
       TITLE_CONTENT: 'Dormitory application',
@@ -131,6 +143,39 @@ describe('multi-source failure isolation', () => {
       onSourceError: () => {},
       fetchImpl: async () => { throw new Error('offline'); },
     })).rejects.toThrow('All configured notice sources failed');
+  });
+
+  test('replaces list-page placeholder content with fetched detail text', async () => {
+    const board = { ...source('cse'), maxPages: 1 };
+    const listHtml = `
+      <table class='board-table'><tbody><tr>
+        <td>Academic</td>
+        <td><a href='/bbs/cse/2055/99/artclView.do'>Detailed notice</a></td>
+        <td>2026.08.11</td>
+      </tr></tbody></table>
+    `;
+    const detailHtml = `
+      <div class='board-view'><div class='txt'>
+        <p>Complete application instructions.</p>
+        <p>Submit documents by 2026-09-01.</p>
+      </div></div>
+    `;
+
+    const rows = await scrapeRecentNotices({
+      sources: [board],
+      sinceMs: new Date('2026-08-01T00:00:00.000Z').getTime(),
+      now,
+      fetchImpl: async (url) => ({
+        ok: true,
+        status: 200,
+        text: async () => url.includes('artclView') ? detailHtml : listHtml,
+      }),
+    });
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0].content).toContain('Complete application instructions.');
+    expect(rows[0].content).toContain('2026-09-01');
+    expect(rows[0].content).not.toContain('Source: CSE Department');
   });
 });
 

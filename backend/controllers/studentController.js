@@ -24,6 +24,11 @@ const {
 const {
   fetchAllNotices,
 } = require("../ai/supabaseDataRepository");
+const { translateNotices } = require("../services/noticeTranslationService");
+const { extractNoticeInfo } = require("../services/noticeExtractionService");
+const { recommendJobs } = require("../ai/jobRecommendationEngine");
+const { adaptStudentProfile } = require("../ai/studentProfileAdapter");
+const { fetchStudentContext } = require("./aiController");
 const supabaseAuth = require("../supabaseAuthClient");
 const crypto = require("crypto");
 const {
@@ -2083,7 +2088,8 @@ const getAcademicRecords = async (req, res) => {
             course:course_id (
               credit,
               category,
-              course_code
+              course_code,
+              major_id
             )
           `,
         )
@@ -2115,11 +2121,12 @@ const getAcademicRecords = async (req, res) => {
         ...rest,
         credit: course?.credit ?? rest.credit ?? 0,
         category: course?.category ?? rest.category ?? "GEN_ED",
+        course_major_id: course?.major_id ?? null,
         official_course_number: course?.course_code ?? null,
       };
     });
 
-    const computed = computeGpaFromEnrollments(enrollments);
+    const computed = computeGpaFromEnrollments(enrollments, studentRow?.major_id ?? null);
 
     // Sum required credits from catalog for student's major
     let requiredCredits = 130;
@@ -2227,7 +2234,8 @@ const getGraduationProgress = async (req, res) => {
             course:course_id (
               credit,
               category,
-              course_code
+              course_code,
+              major_id
             )
           `,
         )
@@ -2259,6 +2267,7 @@ const getGraduationProgress = async (req, res) => {
         ...rest,
         credit: course?.credit ?? rest.credit ?? 0,
         category: course?.category ?? rest.category ?? "GEN_ED",
+        course_major_id: course?.major_id ?? null,
         official_course_number: course?.course_code ?? null,
       };
     });
@@ -2284,6 +2293,7 @@ const getGraduationProgress = async (req, res) => {
       academicSummary: summary,
       semesters,
       catalogRequired,
+      studentMajorId: majorId,
     });
 
     let requirements = [];
@@ -2483,11 +2493,24 @@ const getNotices = async (req, res) => {
         ? Math.min(requestedLimit, 100)
         : 20;
     const sliced = filtered.slice(0, limitValue);
+    // Independent AI calls — extraction reads original Korean text
+    // regardless of the requested display language, so it doesn't need to
+    // wait on translation to finish.
+    const [localized, extracted] = await Promise.all([
+      translateNotices(sliced, req.language || "en"),
+      extractNoticeInfo(sliced),
+    ]);
+    const enriched = localized.map((notice, index) => ({
+      ...notice,
+      deadline: notice.deadline || extracted[index]?.deadline || null,
+      eligibility: extracted[index]?.eligibility ?? null,
+      requiredDocuments: extracted[index]?.requiredDocuments ?? [],
+    }));
 
     res.json({
       success: true,
-      data: sliced,
-      meta: { query, total: sliced.length },
+      data: enriched,
+      meta: { query, total: enriched.length },
     });
   } catch (err) {
     res.status(err.statusCode || 500).json({
@@ -3798,7 +3821,7 @@ const getCareerOpportunities = async (req, res, next) => {
     const seen = new Set();
     const opportunities = [];
 
-    [...storedOpportunities, ...(scrapedData.opportunities || [])].forEach((item) => {
+    [...(scrapedData.opportunities || []), ...storedOpportunities].forEach((item) => {
       const key = item.sourceUrl || `${item.source}:${item.id}`;
       if (seen.has(key)) return;
       seen.add(key);
@@ -3832,19 +3855,27 @@ const getCareerOpportunities = async (req, res, next) => {
 };
 
 /**
- * AI hook-point for personalized internship/job recommendations.
- * AI engineers: replace the body with profile-aware ranking (RAG/LLM).
- * Keep the response shape as CareerOpportunity[] with optional matchReason.
+ * Personalized internship/job recommendations, ranked against the
+ * requesting student's profile (interests/career areas/academic areas
+ * matched against posting title/role/company) via jobRecommendationEngine.
+ * Falls back to soonest-deadline postings when the profile has no tags to
+ * match yet, so the recommended section is never empty.
  */
 const getCareerRecommendations = async (req, res, next) => {
   try {
     const jobType = typeof req.query.jobType === "string" ? req.query.jobType : null;
-    const [data, volunteerOpportunities] = await Promise.all([
+    const [data, volunteerOpportunities, context] = await Promise.all([
       getCareerOpportunitiesPage({ page: 1, limit: 20, jobType }),
       fetchStoredCareerOpportunities({ limit: 10, jobType: jobType || "volunteer" }).catch(() => []),
+      fetchStudentContext(req.user.student_id).catch(() => null),
     ]);
-    const recommendedSource = [...volunteerOpportunities, ...(data.opportunities || [])];
-    const recommended = recommendedSource.slice(0, 3).map((item, index) => ({
+    const recommendedSource = [...(data.opportunities || []), ...volunteerOpportunities];
+    const studentProfile = context
+      ? adaptStudentProfile(context.rawStudentInput).recommendationProfile
+      : {};
+
+    const ranked = recommendJobs(studentProfile, recommendedSource, { limit: 3 });
+    const recommended = ranked.map((item, index) => ({
       ...item,
       location: item.location || "Korea",
       jobType: item.jobType || "internship",
