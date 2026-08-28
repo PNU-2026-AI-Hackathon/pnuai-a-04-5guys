@@ -144,12 +144,23 @@ async function getAcademicPromptContext(studentId, supabaseClient, message = '')
 
       const targetRecommendationLabel = `${enteringYearStr} - ${upcomingSemTermStr}`;
 
+      const isAcademicQuery = /course|class|enroll|subject|credit|graduat|curriculum|prerequisite|과목|수강|학점|졸업|수업|시간표|이수/i.test(message);
+
       let context = `Student Academic Background:\n` +
         `- Major: ${majorName}\n` +
         `- Academic Status: ${studentType === "Freshman" ? "Newly Admitted Freshman" : "Current Enrolled Student"}\n` +
         `- Intake Profile: Enrolled in ${intakeTerm} ${intakeYear}\n` +
         `- Completed semesters so far: ${semestersCompleted}\n` +
-        `- Upcoming target semester: Entering ${enteringYearStr} (calendar ${upcomingSemTermStr} in the ${upcomingSem} semester)\n` +
+        `- Current/Entering Year: ${enteringYearStr}\n`;
+
+      if (!isAcademicQuery) {
+        return {
+          context,
+          queryExpansion: "",
+        };
+      }
+
+      context += `- Upcoming target semester: Entering ${enteringYearStr} (calendar ${upcomingSemTermStr} in the ${upcomingSem} semester)\n` +
         `- TARGETED RECOMMENDATION: When asked for course advice or recommendations for next semester, you MUST prioritize and suggest courses designed for **${targetRecommendationLabel}** in the curriculum for ${majorName}.\n`;
         
       if (studentType === "Freshman") {
