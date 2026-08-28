@@ -13,7 +13,7 @@ async function generateGeminiChat(message, languagePref, context) {
     throw new Error("Gemini API key is not configured");
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
   const langName =
     languagePref === "KO"
@@ -65,7 +65,7 @@ async function generateGeminiMajorAnalysis(userProfile, recommendations) {
     };
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
   const prompt = `
 You are the major recommendation assistant for Hey! PNU, a support platform for international students at Pusan National University.
@@ -142,7 +142,7 @@ async function translateGeminiAnnouncement(imageBase64, mimeType, textContent) {
     throw new Error("Gemini API key is not configured");
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
   const systemPrompt = `
 You are the Hey! PNU Academic and Settlement Notice Translator.
@@ -446,9 +446,10 @@ ${JSON.stringify(strings, null, 2)}
 }
 
 async function requestCafeteriaTranslations(strings, langName, { retries = 3 } = {}) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+  if (isGeminiConfigured()) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
-  const prompt = `
+    const prompt = `
 You are translating a Pusan National University (PNU) cafeteria weekly menu for international students.
 Translate each Korean string into natural ${langName}.
 
@@ -464,72 +465,60 @@ Source strings:
 ${JSON.stringify(strings, null, 2)}
 `.trim();
 
-  let lastError = null;
-  for (let attempt = 0; attempt <= retries; attempt += 1) {
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.2,
-          },
-        }),
-      });
+    let lastError = null;
+    for (let attempt = 0; attempt <= retries; attempt += 1) {
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.2,
+            },
+          }),
+        });
 
-      if (response.status === 429) {
-        lastError = new Error("Gemini API error: Too Many Requests");
-        if (attempt < retries) {
-          // Free-tier keys rate-limit easily under burst concurrency; back off
-          // before giving up so the OpenRouter fallback is the exception.
-          await new Promise((resolve) => setTimeout(resolve, 1500 * (attempt + 1)));
-          continue;
+        if (!response.ok) {
+          throw new Error(`Gemini API error: ${response.statusText}`);
         }
-        break;
-      }
 
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.statusText}`);
-      }
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) {
+          throw new Error("Empty response from Gemini");
+        }
 
-      const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) {
-        throw new Error("Empty response from Gemini");
-      }
-
-      const parsed = parseGeminiJson(text);
-      if (parsed && typeof parsed.translations === "object" && parsed.translations) {
-        return parsed.translations;
-      }
-      if (parsed && typeof parsed === "object") {
-        return parsed;
-      }
-      return {};
-    } catch (error) {
-      lastError = error;
-      if (attempt < retries) {
-        await new Promise((resolve) => setTimeout(resolve, 600 * (attempt + 1)));
+        const parsed = parseGeminiJson(text);
+        if (parsed && typeof parsed.translations === "object" && parsed.translations) {
+          return parsed.translations;
+        }
+        if (parsed && typeof parsed === "object") {
+          return parsed;
+        }
+        return {};
+      } catch (error) {
+        lastError = error;
+        if (attempt < retries) {
+          await new Promise((resolve) => setTimeout(resolve, 600 * (attempt + 1)));
+        }
       }
     }
   }
 
-  // Fallback when Gemini is rate-limited / unavailable
-  try {
-    console.warn(
-      "[geminiService] Falling back to OpenRouter for cafeteria translation:",
-      lastError?.message || "unknown Gemini error",
-    );
-    return await requestCafeteriaTranslationsViaOpenRouter(strings, langName);
-  } catch (fallbackError) {
-    console.warn(
-      "[geminiService] OpenRouter cafeteria translation failed:",
-      fallbackError.message,
-    );
-    throw lastError || fallbackError;
+  if (process.env.OPENROUTER_API_KEY) {
+    try {
+      return await requestCafeteriaTranslationsViaOpenRouter(strings, langName);
+    } catch (fallbackError) {
+      console.warn(
+        "[geminiService] OpenRouter cafeteria translation failed:",
+        fallbackError.message,
+      );
+    }
   }
+
+  return {};
 }
 
 /**
@@ -647,7 +636,7 @@ async function generateGeminiChatStream(message, languagePref, context) {
     throw new Error("Gemini API key is not configured");
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?key=${process.env.GEMINI_API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key=${process.env.GEMINI_API_KEY}`;
 
   const langName =
     languagePref === "KO"
@@ -810,26 +799,26 @@ ${JSON.stringify(itemsToTranslate, null, 2)}
   let jsonText = "";
 
   if (isGeminiConfigured()) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.2,
-        },
-      }),
-    });
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.2,
+          },
+        }),
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    } else {
-      console.warn(
-        `[geminiService] Gemini program translation failed: ${response.status} ${response.statusText}`,
-      );
+      if (response.ok) {
+        const data = await response.json();
+        jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      }
+    } catch (_err) {
+      // ignore
     }
   }
 
@@ -1066,8 +1055,48 @@ ${JSON.stringify(chunk.map(m => ({ id: m.id, title: m.title, company: m.company,
 `.trim();
 
       let jsonText = "";
-      if (isGeminiConfigured()) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+
+      if (process.env.OPENROUTER_API_KEY) {
+        const orUrl = "https://openrouter.ai/api/v1/chat/completions";
+        const preferredModel = process.env.OPENROUTER_MODEL;
+        const models = [
+          ...(preferredModel ? [preferredModel] : []),
+          "google/gemini-2.5-flash",
+          "google/gemma-4-26b-a4b-it:free",
+          "google/gemma-4-31b-it:free",
+          "openrouter/free",
+        ];
+
+        for (const model of models) {
+          try {
+            const response = await fetch(orUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                "HTTP-Referer": "https://localhost:3000",
+                "X-Title": "Hey! PNU Career Translation",
+              },
+              body: JSON.stringify({
+                model,
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.2,
+                max_tokens: 3000,
+              }),
+            });
+            if (response.ok) {
+              const data = await response.json();
+              jsonText = data.choices?.[0]?.message?.content || "";
+              if (jsonText) break;
+            }
+          } catch (err) {
+            console.warn(`[geminiService] OpenRouter career translation failed on ${model}:`, err.message);
+          }
+        }
+      }
+
+      if (!jsonText && isGeminiConfigured()) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
         try {
           const response = await fetch(url, {
             method: "POST",
@@ -1080,45 +1109,9 @@ ${JSON.stringify(chunk.map(m => ({ id: m.id, title: m.title, company: m.company,
           if (response.ok) {
             const data = await response.json();
             jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            if (!jsonText) {
-               console.warn("[translateCareers] response.ok but jsonText is empty. Data:", JSON.stringify(data));
-            }
-          } else {
-            const errText = await response.text();
-            console.warn(`[translateCareers] Gemini fetch failed: ${response.status} - ${errText}`);
           }
-        } catch (err) {
-          console.warn("[geminiService] Gemini career translation network failed", err.message);
-        }
-      }
-
-      if (!jsonText && process.env.OPENROUTER_API_KEY) {
-        const orUrl = "https://openrouter.ai/api/v1/chat/completions";
-        try {
-          const response = await fetch(orUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-            },
-            body: JSON.stringify({
-              model: "google/gemini-3.5-flash",
-              messages: [{ role: "user", content: prompt }],
-              temperature: 0.2,
-            }),
-          });
-          if (response.ok) {
-            const data = await response.json();
-            jsonText = data.choices?.[0]?.message?.content || "";
-            if (!jsonText) {
-               console.warn("[translateCareers] OR response.ok but jsonText is empty. Data:", JSON.stringify(data));
-            }
-          } else {
-            const errText = await response.text();
-            console.warn(`[translateCareers] OR fetch failed: ${response.status} - ${errText}`);
-          }
-        } catch (err) {
-          console.warn("[geminiService] OpenRouter career translation network failed", err.message);
+        } catch (_err) {
+          // ignore
         }
       }
 

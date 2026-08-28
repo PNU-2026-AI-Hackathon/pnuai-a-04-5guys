@@ -39,7 +39,7 @@ const MAX_NOTICES_PER_REQUEST = 40;
 // reliably fits under max_tokens — a batch of 10 was overflowing it,
 // truncating the JSON mid-response and failing every model in the
 // fallback chain on every batch (each retry costs a full round trip).
-const BATCH_SIZE = 4;
+const BATCH_SIZE = 2;
 // Bounds how long a single model attempt can hang before the fallback
 // chain moves to the next model — without it a stalled provider blocks
 // the whole request with no upper bound.
@@ -59,7 +59,33 @@ function parseJsonResponse(text) {
     .replace(/^```\s*/i, "")
     .replace(/```$/i, "")
     .trim();
-  return JSON.parse(cleaned);
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (_err) {
+    // Sanitise unescaped control characters inside JSON strings (e.g. raw newlines in long notice bodies)
+    try {
+      const sanitized = cleaned
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, (ch) => {
+          if (ch === "\n") return "\\n";
+          if (ch === "\r") return "\\r";
+          if (ch === "\t") return "\\t";
+          return "";
+        });
+      return JSON.parse(sanitized);
+    } catch (_err2) {
+      // Fallback regex extractor for translations object { "<id>": { "title": "...", "body": "..." } }
+      const translations = {};
+      const idMatches = cleaned.matchAll(/"([^"]+)":\s*\{\s*"title":\s*"((?:[^"\\]|\\.)*)",\s*"body":\s*"((?:[^"\\]|\\.)*)"/gs);
+      for (const m of idMatches) {
+        translations[m[1]] = { title: m[2], body: m[3] };
+      }
+      if (Object.keys(translations).length > 0) {
+        return { translations };
+      }
+      throw _err;
+    }
+  }
 }
 
 async function requestNoticeTranslations(items, langName) {
